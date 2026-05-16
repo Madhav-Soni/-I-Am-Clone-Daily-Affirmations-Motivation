@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-const authController = require("../controllers/authController");
-const { protect } = require("../middleware/auth");
+const authController = require("../../controllers/authController");
+const { protect } = require("../../middleware/auth");
 const {
   registerValidator,
   loginValidator,
   onboardingValidator,
-} = require("../middleware/validate");
+} = require("../validators/authValidators");
 
 // Public
 router.post("/register", registerValidator, authController.register);

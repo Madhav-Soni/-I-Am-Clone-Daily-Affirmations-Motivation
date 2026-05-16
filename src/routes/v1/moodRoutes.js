@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
 
-const moodController = require("../controllers/moodController");
-const statsController = require("../controllers/statsController");
-const { protect } = require("../middleware/auth");
-const { moodLogValidator } = require("../middleware/validate");
+const moodController = require("../../controllers/moodController");
+const statsController = require("../../controllers/statsController");
+const { protect } = require("../../middleware/auth");
+const { moodLogValidator } = require("../validators/moodValidators");
 
 router.use(protect);
 

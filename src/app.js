@@ -4,9 +4,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 
-const authRoutes = require("./routes/authRoutes");
-const affirmationRoutes = require("./routes/affirmationRoutes");
-const moodRoutes = require("./routes/moodRoutes");
+const routes = require("./routes");
 const errorHandler = require("./middleware/errorHandler");
 const { AppError } = require("./utils/appError");
 const logger = require("./utils/logger");
@@ -73,9 +71,7 @@ app.get("/health", (req, res) => {
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1", affirmationRoutes);
-app.use("/api/v1", moodRoutes);
+app.use("/api", routes);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 

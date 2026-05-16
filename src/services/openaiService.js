@@ -1,6 +1,6 @@
 const OpenAI = require("openai");
-const { buildSafePromptContext } = require("../utils/piiSanitizer");
-const logger = require("../utils/logger");
+const { buildSafePromptContext } = require("../../utils/piiSanitizer");
+const logger = require("../../utils/logger");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

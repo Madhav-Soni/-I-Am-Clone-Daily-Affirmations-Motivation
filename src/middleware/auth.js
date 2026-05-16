@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const { AppError, asyncHandler } = require("../utils/appError");
+const User = require("../../models/User");
+const { AppError, asyncHandler } = require("../../utils/appError");
 
 /**
  * Protects routes by verifying the JWT in the Authorization header.

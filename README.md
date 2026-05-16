@@ -112,32 +112,49 @@ Refresh tokens are stored (hashed via bcrypt on the model) and compared on each 
 ## Project Structure
 
 ```
-src/
-├── server.js          # Entry point — DB connect + HTTP listen
-├── app.js             # Express app, middleware, routes
-├── config/
-│   └── database.js    # Mongoose connection
-├── models/
-│   ├── User.js        # User schema + streak/limit methods
-│   ├── Affirmation.js # Affirmation schema
-│   └── MoodLog.js     # Mood log schema
-├── controllers/
-│   ├── authController.js
-│   ├── affirmationController.js
-│   ├── moodController.js
-│   └── statsController.js
-├── routes/
-│   ├── authRoutes.js
-│   ├── affirmationRoutes.js
-│   └── moodRoutes.js
-├── middleware/
-│   ├── auth.js        # JWT protect + generateTokens
-│   ├── validate.js    # express-validator chains
-│   └── errorHandler.js
-├── services/
-│   └── openaiService.js  # Streaming + non-streaming generation
-└── utils/
-    ├── appError.js    # AppError class + asyncHandler
-    ├── logger.js      # Winston logger
-    └── piiSanitizer.js   # PII removal before AI calls
+I AM WELL/
+├── src/
+│   ├── config/
+│   │   ├── database.js          # Mongoose connection
+│   │   └── env.js               # Centralized env validation
+│   ├── controllers/
+│   │   ├── authController.js
+│   │   ├── affirmationController.js
+│   │   ├── moodController.js
+│   │   └── statsController.js
+│   ├── models/
+│   │   ├── User.js              # User schema + streak/limit methods
+│   │   ├── Affirmation.js      # Affirmation schema
+│   │   └── MoodLog.js           # Mood log schema
+│   ├── routes/
+│   │   ├── index.js             # Route aggregator
+│   │   └── v1/
+│   │       ├── authRoutes.js
+│   │       ├── affirmationRoutes.js
+│   │       └── moodRoutes.js
+│   ├── middleware/
+│   │   ├── auth.js              # JWT protect + generateTokens
+│   │   ├── errorHandler.js     # Global error handler
+│   │   └── validators/
+│   │       ├── authValidators.js
+│   │       ├── affirmationValidators.js
+│   │       └── moodValidators.js
+│   ├── services/
+│   │   └── openaiService.js     # Streaming + non-streaming generation
+│   ├── utils/
+│   │   ├── appError.js          # AppError class + asyncHandler
+│   │   ├── logger.js            # Winston logger
+│   │   └── piiSanitizer.js      # PII removal before AI calls
+│   ├── app.js                   # Express app, middleware, routes
+│   └── server.js                # Entry point — DB connect + HTTP listen
+├── tests/
+│   ├── unit/
+│   │   └── auth.test.js
+│   └── integration/
+├── logs/                        # Winston log files
+├── .env
+├── .env.example
+├── .gitignore
+├── package.json
+└── README.md
 ```

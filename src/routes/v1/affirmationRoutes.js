@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 
-const affirmationController = require("../controllers/affirmationController");
-const { protect } = require("../middleware/auth");
+const affirmationController = require("../../controllers/affirmationController");
+const { protect } = require("../../middleware/auth");
 const {
   generateAffirmationValidator,
   affirmationIdValidator,
-} = require("../middleware/validate");
+} = require("../validators/affirmationValidators");
 
 // All routes require authentication
 router.use(protect);
