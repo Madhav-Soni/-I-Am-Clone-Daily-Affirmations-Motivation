@@ -18,6 +18,14 @@ const generateAffirmationValidator = [
     .optional()
     .isIn(["Career", "Health", "Confidence", "Relationships", "Mindfulness", "Gratitude", "Productivity", "General"])
     .withMessage("Invalid category"),
+  body("mood")
+    .optional()
+    .isString()
+    .withMessage("Mood must be a string"),
+  body("note")
+    .optional()
+    .isString()
+    .withMessage("Note must be a string"),
   validate,
 ];
 

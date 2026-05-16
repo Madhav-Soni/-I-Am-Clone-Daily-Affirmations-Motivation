@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  pickMockAffirmation,
   REVEAL_TIMING,
 } from "@/features/affirmation/constants/reveal";
-import { mockStreamAffirmation } from "@/features/affirmation/services/mockStream";
+import { streamAffirmation } from "@/services/sse/streamAffirmation";
 import { useCheckInDraftStore } from "@/features/mood/store/checkInDraftStore";
 import { hapticLight, hapticSuccess } from "@/shared/lib/haptics";
 import { useGenerationStore } from "@/store";
@@ -23,7 +22,8 @@ type UseRevealFlowOptions = {
 export function useRevealFlow(options: UseRevealFlowOptions = {}) {
   const [phase, setPhase] = useState<RevealPhase>("anticipation");
   const mood = useCheckInDraftStore((s) => s.mood);
-  const cancelledRef = useRef(false);
+  const note = useCheckInDraftStore((s) => s.note);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const lastHapticRef = useRef(0);
 
   const setStatus = useGenerationStore((s) => s.setStatus);
@@ -33,58 +33,70 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
   const reset = useGenerationStore((s) => s.reset);
 
   const runFlow = useCallback(async () => {
-    cancelledRef.current = false;
-    const fullText = pickMockAffirmation(options.category, mood);
+    // Abort any existing request
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+
     setCategory(options.category ?? "General");
     setPartialText("");
     setStatus("connecting");
     setPhase("anticipation");
 
-    await sleep(REVEAL_TIMING.anticipationMs);
-    if (cancelledRef.current) return;
+    try {
+      await sleep(REVEAL_TIMING.anticipationMs);
+      if (abortControllerRef.current.signal.aborted) return;
 
-    setPhase("thinking");
-    await sleep(REVEAL_TIMING.thinkingMs);
-    if (cancelledRef.current) return;
+      setPhase("thinking");
+      await sleep(REVEAL_TIMING.thinkingMs);
+      if (abortControllerRef.current.signal.aborted) return;
 
-    setPhase("revealing");
-    setStatus("streaming");
+      setPhase("revealing");
+      setStatus("streaming");
 
-    for await (const chunk of mockStreamAffirmation(fullText)) {
-      if (cancelledRef.current) return;
-      setPartialText(chunk);
+      const stream = streamAffirmation({
+        category: options.category,
+        mood,
+        note,
+        signal: abortControllerRef.current.signal,
+      });
 
-      if (chunk.length - lastHapticRef.current >= 14) {
-        lastHapticRef.current = chunk.length;
-        void hapticLight();
+      for await (const chunk of stream) {
+        setPartialText(chunk);
+
+        if (chunk.length - lastHapticRef.current >= 14) {
+          lastHapticRef.current = chunk.length;
+          void hapticLight();
+        }
       }
+
+      setStatus("complete");
+      setPhase("reflection");
+      void hapticSuccess();
+
+      await sleep(REVEAL_TIMING.reflectionMs);
+      if (abortControllerRef.current.signal.aborted) return;
+
+      setPhase("actions");
+      await sleep(REVEAL_TIMING.streakDelayMs);
+      if (abortControllerRef.current.signal.aborted) return;
+
+      setPhase("streak");
+    } catch (error: any) {
+      if (error.name === "AbortError") return;
+      console.error("Affirmation generation failed:", error);
+      setStatus("error");
     }
-
-    if (cancelledRef.current) return;
-
-    setStatus("complete");
-    setPhase("reflection");
-    void hapticSuccess();
-
-    await sleep(REVEAL_TIMING.reflectionMs);
-    if (cancelledRef.current) return;
-
-    setPhase("actions");
-    await sleep(REVEAL_TIMING.streakDelayMs);
-    if (cancelledRef.current) return;
-
-    setPhase("streak");
-  }, [mood, options.category, setCategory, setPartialText, setStatus]);
+  }, [mood, note, options.category, setCategory, setPartialText, setStatus]);
 
   useEffect(() => {
     runFlow();
     return () => {
-      cancelledRef.current = true;
+      abortControllerRef.current?.abort();
     };
   }, [runFlow]);
 
   const cancel = useCallback(() => {
-    cancelledRef.current = true;
+    abortControllerRef.current?.abort();
     setStatus("cancelled");
     reset();
   }, [reset, setStatus]);
