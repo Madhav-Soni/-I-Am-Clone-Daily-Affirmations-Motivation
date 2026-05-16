@@ -76,7 +76,17 @@ export function AffirmationRevealExperience({ category }: AffirmationRevealExper
           <RevealActionBar
             saved={saved}
             onSave={() => setSaved(true)}
-            onShare={() => undefined}
+            onShare={() => {
+              router.push({
+                pathname: "/(modals)/share-affirmation",
+                params: {
+                  content: partialText,
+                  category: category ?? "General",
+                  mood: useCheckInDraftStore.getState().mood ?? undefined,
+                  note: useCheckInDraftStore.getState().note ?? undefined,
+                },
+              });
+            }}
             onDone={handleDismiss}
           />
         ) : null}
