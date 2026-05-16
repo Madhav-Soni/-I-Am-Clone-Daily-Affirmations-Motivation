@@ -12,7 +12,7 @@ import { SHARE_THEMES, type ShareTheme } from "@/features/affirmation/types/shar
 import { REVEAL_BLOBS } from "@/features/affirmation/constants/reveal";
 import Animated, { 
   FadeIn, 
-  SlideInBottom, 
+  FadeInDown,
   useAnimatedStyle, 
   useSharedValue, 
   withSequence, 
@@ -61,7 +61,7 @@ export default function ShareAffirmationModal() {
 
   return (
     <FullscreenScreen gradient="void" padded={false}>
-      <AmbientBlobBackground blobConfigs={REVEAL_BLOBS} />
+      <AmbientBlobBackground blobs={REVEAL_BLOBS} />
       
       <Animated.View entering={FadeIn.duration(600)} className="flex-1">
         <ScrollView 
@@ -79,7 +79,7 @@ export default function ShareAffirmationModal() {
 
           <View style={styles.previewContainer}>
             <Animated.View 
-              entering={SlideInBottom.delay(200).duration(800).springify().damping(15)}
+              entering={FadeInDown.delay(200).duration(800).springify().damping(15)}
               style={styles.cardWrapper}
             >
               <ShareableAffirmationCard
@@ -125,7 +125,7 @@ export default function ShareAffirmationModal() {
         </ScrollView>
 
         <Animated.View 
-          entering={SlideInBottom.delay(600).duration(600)}
+          entering={FadeInDown.delay(600).duration(600)}
           className="p-8 pb-12 bg-black/40 backdrop-blur-3xl border-t border-white/5"
         >
           <View className="flex-row gap-4 mb-4">
