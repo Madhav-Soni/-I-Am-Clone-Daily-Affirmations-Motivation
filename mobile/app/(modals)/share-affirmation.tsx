@@ -12,13 +12,11 @@ import { SHARE_THEMES, type ShareTheme } from "@/features/affirmation/types/shar
 import { REVEAL_BLOBS } from "@/features/affirmation/constants/reveal";
 import Animated, { 
   FadeIn, 
-  FadeOut, 
   SlideInBottom, 
   useAnimatedStyle, 
   useSharedValue, 
   withSequence, 
   withTiming,
-  withDelay
 } from "react-native-reanimated";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -43,7 +41,7 @@ export default function ShareAffirmationModal() {
       withTiming(0.4, { duration: 200 }),
       withTiming(0, { duration: 400 })
     );
-  }, []);
+  }, [shimmerOpacity]);
 
   const handleShare = async () => {
     runShimmer();
@@ -71,7 +69,7 @@ export default function ShareAffirmationModal() {
           showsVerticalScrollIndicator={false}
         >
           <View className="px-8 pt-16 mb-10">
-            <Text variant="h2" align="center" className="text-3xl mb-3 font-serif">
+            <Text variant="display" align="center" className="text-3xl mb-3 font-serif">
               Share your light
             </Text>
             <Text variant="body" color="muted" align="center" className="px-6">
@@ -87,11 +85,11 @@ export default function ShareAffirmationModal() {
               <ShareableAffirmationCard
                 ref={cardRef}
                 theme={selectedTheme}
-                content={params.content!}
-                mood={params.mood}
-                category={params.category}
-                note={params.note}
-                timestamp={params.timestamp}
+                content={params.content ? String(params.content) : ""}
+                mood={params.mood ? String(params.mood) : undefined}
+                category={params.category ? String(params.category) : undefined}
+                note={params.note ? String(params.note) : undefined}
+                timestamp={params.timestamp ? String(params.timestamp) : undefined}
               />
               
               {/* Shimmer Effect Overlay */}
@@ -133,30 +131,33 @@ export default function ShareAffirmationModal() {
           <View className="flex-row gap-4 mb-4">
             <View className="flex-1">
               <Button
-                label={status === "saving" ? "Saving..." : "Save Image"}
                 onPress={handleSave}
                 variant="secondary"
                 size="lg"
                 disabled={isProcessing}
-              />
+              >
+                {status === "saving" ? "Saving..." : "Save Image"}
+              </Button>
             </View>
             <View className="flex-1">
               <Button
-                label={status === "sharing" ? "Sharing..." : "Share"}
                 onPress={handleShare}
                 variant="primary"
                 size="lg"
                 disabled={isProcessing}
-              />
+              >
+                {status === "sharing" ? "Sharing..." : "Share"}
+              </Button>
             </View>
           </View>
           <Button
-            label="Dismiss"
             onPress={() => router.back()}
             variant="ghost"
             disabled={isProcessing}
             fullWidth
-          />
+          >
+            Dismiss
+          </Button>
         </Animated.View>
       </Animated.View>
     </FullscreenScreen>

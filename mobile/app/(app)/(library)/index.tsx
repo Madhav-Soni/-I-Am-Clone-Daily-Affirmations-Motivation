@@ -30,7 +30,7 @@ export default function LibraryScreen() {
   const affirmations = data?.affirmations || [];
 
   return (
-    <FullscreenScreen gradient="luxury" padded={false}>
+    <FullscreenScreen gradient="void" padded={false}>
       <FlatList
         data={affirmations}
         keyExtractor={(item) => item._id}
@@ -46,7 +46,7 @@ export default function LibraryScreen() {
         ListHeaderComponent={
           <View className="pt-16 mb-6">
             <View className="px-6 mb-8">
-              <Text variant="h1" className="text-4xl mb-2 font-serif">
+              <Text variant="displayLg" className="text-4xl mb-2 font-serif">
                 Library
               </Text>
               <Text variant="body" color="muted">

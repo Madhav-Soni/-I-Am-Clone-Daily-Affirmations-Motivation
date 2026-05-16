@@ -11,18 +11,19 @@ export function EmptyLibrary() {
         {/* Placeholder for an icon */}
         <View className="w-10 h-10 border-2 border-brand-500/40 rounded-lg transform rotate-45" />
       </View>
-      <Text variant="h2" align="center" className="mb-3">
+      <Text variant="display" align="center" className="mb-3">
         Your library is empty
       </Text>
       <Text variant="body" color="muted" align="center" className="mb-10">
         Start your first ritual to begin saving affirmations that resonate with you.
       </Text>
       <Button
-        label="Start Today's Ritual"
         onPress={() => router.push("/(app)/(home)")}
         variant="primary"
         size="lg"
-      />
+      >
+        Start Today's Ritual
+      </Button>
     </View>
   );
 }

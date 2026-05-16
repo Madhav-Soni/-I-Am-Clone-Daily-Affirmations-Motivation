@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { FullscreenScreen } from "@/shared/components/primitives/FullscreenScreen";
-import { Text } from "@/shared/components/primitives/Text";
+import { Text, DisplayText } from "@/shared/components/primitives/Text";
 import { useAffirmation } from "@/features/library/hooks/useAffirmations";
 import { RevealCloseButton } from "@/features/affirmation/components/RevealCloseButton";
 import { Button } from "@/shared/components/primitives/Button";
@@ -15,7 +15,7 @@ export default function AffirmationDetailScreen() {
 
   if (isLoading || !affirmation) {
     return (
-      <FullscreenScreen gradient="luxury">
+      <FullscreenScreen gradient="void">
         <View className="flex-1 justify-center items-center">
           <Text color="muted">Loading your truth...</Text>
         </View>
@@ -24,7 +24,7 @@ export default function AffirmationDetailScreen() {
   }
 
   return (
-    <FullscreenScreen gradient="luxury" blobConfigs={REVEAL_BLOBS} padded={false}>
+    <FullscreenScreen gradient="void" blobConfigs={REVEAL_BLOBS} padded={false}>
       <View style={styles.header}>
         <RevealCloseButton onPress={() => router.back()} />
       </View>
@@ -33,14 +33,14 @@ export default function AffirmationDetailScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <View className="mb-8">
             <View className="bg-brand-500/10 self-start px-3 py-1 rounded-full border border-brand-500/20 mb-6">
-              <Text className="text-xs font-medium tracking-widest uppercase text-brand-400">
+              <Text variant="label" className="tracking-widest uppercase text-brand-400">
                 {affirmation.category}
               </Text>
             </View>
 
-            <Text variant="h1" className="text-4xl leading-[52px] font-serif italic text-white/95 mb-10">
+            <DisplayText className="text-4xl leading-[52px] font-serif italic text-white/95 mb-10">
               "{affirmation.content}"
-            </Text>
+            </DisplayText>
 
             {affirmation.note && (
               <View className="bg-white/5 rounded-3xl p-8 border border-white/5">
@@ -59,7 +59,7 @@ export default function AffirmationDetailScreen() {
                   MOOD WHEN SAVED:
                 </Text>
                 <View className="bg-luxury-accent/10 px-3 py-1 rounded-full border border-luxury-accent/20">
-                  <Text className="text-xs font-medium text-luxury-accent uppercase">
+                  <Text variant="label" className="text-luxury-accent uppercase">
                     {affirmation.mood}
                   </Text>
                 </View>
@@ -72,7 +72,7 @@ export default function AffirmationDetailScreen() {
       <View className="p-8 pb-12 flex-row gap-4">
         <View className="flex-1">
           <Button
-            label="Share"
+            variant="primary"
             onPress={() => {
               router.push({
                 pathname: "/(modals)/share-affirmation",
@@ -85,11 +85,14 @@ export default function AffirmationDetailScreen() {
                 },
               });
             }}
-            variant="primary"
-          />
+          >
+            Share
+          </Button>
         </View>
         <View className="flex-1">
-          <Button label="Close" onPress={() => router.back()} variant="ghost" />
+          <Button variant="ghost" onPress={() => router.back()}>
+            Close
+          </Button>
         </View>
       </View>
     </FullscreenScreen>

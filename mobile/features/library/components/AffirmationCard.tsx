@@ -44,7 +44,7 @@ export function AffirmationCard({ affirmation, onPress, index }: AffirmationCard
           )}
         </View>
 
-        <Text variant="h3" className="mb-4 leading-8 font-serif italic text-white/90">
+        <Text variant="headline" className="mb-4 leading-8 font-serif italic text-white/90">
           "{affirmation.content}"
         </Text>
 

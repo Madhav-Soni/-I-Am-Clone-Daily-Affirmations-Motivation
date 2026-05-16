@@ -54,10 +54,10 @@ export const ShareableAffirmationCard = React.forwardRef<View, ShareableAffirmat
       <View ref={ref} style={styles.container} collapsable={false}>
         {gradient ? (
           <LinearGradient
-            colors={gradient.colors as string[]}
+            colors={gradient.colors as unknown as string[]}
             start={gradient.start}
             end={gradient.end}
-            locations={gradient.locations as number[]}
+            locations={gradient.locations as unknown as [number, number, ...number[]]}
             style={StyleSheet.absoluteFill}
           />
         ) : (
