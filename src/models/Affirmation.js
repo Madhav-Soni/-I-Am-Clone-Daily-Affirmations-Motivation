@@ -28,6 +28,12 @@ const affirmationSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    mood: {
+      type: String,
+    },
+    note: {
+      type: String,
+    },
     // Metadata from the AI generation — useful for observability
     aiMetadata: {
       model: String,
@@ -46,5 +52,6 @@ const affirmationSchema = new mongoose.Schema(
 affirmationSchema.index({ userId: 1, createdAt: -1 });
 affirmationSchema.index({ userId: 1, isFavorite: 1 });
 affirmationSchema.index({ userId: 1, category: 1 });
+affirmationSchema.index({ userId: 1, mood: 1 });
 
 module.exports = mongoose.model("Affirmation", affirmationSchema);

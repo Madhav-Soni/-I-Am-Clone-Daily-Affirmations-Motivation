@@ -41,6 +41,8 @@ exports.generateAffirmation = asyncHandler(async (req, res, next) => {
     await Affirmation.create({
       content,
       category,
+      mood: moodContext?.mood,
+      note: moodContext?.note,
       generatedBy: "AI",
       userId: req.user._id,
       aiMetadata,
