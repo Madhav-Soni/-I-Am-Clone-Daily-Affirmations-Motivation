@@ -35,8 +35,10 @@ const authLimiter = rateLimit({
   message: { status: "fail", message: "Too many auth attempts. Please wait 15 minutes." },
 });
 
-app.use("/api", globalLimiter);
-app.use("/api/v1/auth", authLimiter);
+if (process.env.NODE_ENV !== "test") {
+  app.use("/api", globalLimiter);
+  app.use("/api/v1/auth", authLimiter);
+}
 
 // ─── Request Parsing ──────────────────────────────────────────────────────────
 

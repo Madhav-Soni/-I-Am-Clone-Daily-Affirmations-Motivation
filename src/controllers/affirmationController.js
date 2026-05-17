@@ -103,15 +103,7 @@ const generateAffirmationHandler = asyncHandler(async (req, res, next) => {
   const { category } = req.body;
   const userId = req.user._id;
 
-  const user = await User.findById(userId).select(
-    'name isPremium preferences ' +
-    'promptRegister promptRegisterAdvancedAt ' +
-    'recentThematicTags reflectionSummary ' +
-    'streakCount longestStreak lastActivityAt streakRecoveryUsedAt ' +
-    'recentEmotionalTheme dominantEmotionalTheme recentReflectionSummary ' +
-    'midTermReflectionSummary identityMemory archivedPhases lastThemeShiftAt ' +
-    'distressRiskLevel distressSignals supportMode lastDistressInterventionAt'
-  );
+  const user = await User.findById(userId);
 
   if (!user) return next(new AppError('User not found', 404));
 
@@ -180,7 +172,7 @@ const generateAffirmationHandler = asyncHandler(async (req, res, next) => {
   // ── 3. Atomic daily limit check (timezone-aware) ──────────────────────────
   let limitCheck;
   try {
-    limitCheck = await req.user.checkAndIncrementDailyLimit();
+    limitCheck = await user.checkAndIncrementDailyLimit();
     if (!limitCheck.allowed) {
       return next(
         new AppError(
@@ -207,6 +199,15 @@ const generateAffirmationHandler = asyncHandler(async (req, res, next) => {
       }
     : null;
 
+  // Fetch recent mood logs history for the state machine engines
+  const recentLogs = await MoodLog.find({ userId })
+    .sort({ createdAt: -1 })
+    .limit(15)
+    .lean();
+
+  // Statefully rotate registers and metaphors based on long-term trajectories, note depth, and consistency
+  await user.rotatePromptEntropy(recentLogs, latestMood?.mood, latestMood?.note);
+
   // ── 5. Stream vs Non-Stream generation ───────────────────────────────────
   if (req.headers.accept === 'text/event-stream') {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -225,7 +226,7 @@ const generateAffirmationHandler = asyncHandler(async (req, res, next) => {
     let result;
     try {
       result = await generateAffirmationStream({
-        user: req.user,
+        user: user,
         latestMood,
         category: category || 'general wellbeing',
         res,
@@ -262,7 +263,7 @@ const generateAffirmationHandler = asyncHandler(async (req, res, next) => {
     let result;
     try {
       result = await generateAffirmation({
-        user: req.user,
+        user: user,
         latestMood,
         category: category || 'general wellbeing',
       });

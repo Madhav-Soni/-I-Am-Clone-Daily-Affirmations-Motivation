@@ -426,29 +426,29 @@ userSchema.methods.rotatePromptEntropy = async function (recentMoodLogs, current
   let selectedMetaphor = this.activeMetaphorDomain || "breath";
   let reason = "cycle";
 
-  // 1. Burnout / Persistent Anxiety Rule
-  if (trend === "persistently anxious" || ["ANXIOUS", "OVERWHELMED"].includes((currentMood || "").toUpperCase())) {
-    selectedRegister = "permission";
-    selectedMetaphor = "breath";
-    reason = "burnout_rule";
-  }
-  // 2. Difficult Emotional Period Rule (Declining trajectory or Sad/Tired mood)
-  else if (trend === "declining" || ["SAD", "TIRED"].includes((currentMood || "").toUpperCase())) {
-    selectedRegister = "recovery";
-    selectedMetaphor = "ocean";
-    reason = "recovery_rule";
-  }
-  // 3. High Journaling Depth Rule (note length >= 100 characters)
-  else if (moodNote && moodNote.trim().length >= 100) {
+  // 1. High Journaling Depth Rule (note length >= 100 characters)
+  if (moodNote && moodNote.trim().length >= 100) {
     selectedRegister = "identity";
     selectedMetaphor = "craftsmanship";
     reason = "journaling_rule";
   }
-  // 4. High Consistency Streak Rule (streak count >= 5)
+  // 2. High Consistency Streak Rule (streak count >= 5)
   else if ((this.streakCount || 0) >= 5) {
     selectedRegister = "expansion";
     selectedMetaphor = "movement";
     reason = "streak_rule";
+  }
+  // 3. Burnout / Persistent Anxiety Rule
+  else if (trend === "persistently anxious" || ["ANXIOUS", "OVERWHELMED"].includes((currentMood || "").toUpperCase())) {
+    selectedRegister = "permission";
+    selectedMetaphor = "breath";
+    reason = "burnout_rule";
+  }
+  // 4. Difficult Emotional Period Rule (Declining trajectory or Sad/Tired mood)
+  else if (trend === "declining" || ["SAD", "TIRED"].includes((currentMood || "").toUpperCase())) {
+    selectedRegister = "recovery";
+    selectedMetaphor = "ocean";
+    reason = "recovery_rule";
   }
   // 5. Standard Cycle Rotation (weekly calendar rotation or unit cycles)
   else {
@@ -554,20 +554,9 @@ userSchema.methods.classifyAndUpdateEmotionalPhase = async function (recentMoodL
 
   // Perform classification over rich history
   if (n >= 3) {
-    // A. Crisis Classification
-    const recent5 = logs.slice(0, 5);
-    const crisisCount = recent5.filter(l => crisisMoods.includes(l.mood)).length;
-    const avgIntensity = recent5.reduce((sum, l) => sum + (l.intensity || 5), 0) / (recent5.length || 1);
-
-    const activeMoodIsCrisis = activeMood && crisisMoods.includes(activeMood);
-    
-    if ((activeMoodIsCrisis && activeIntensity >= 7) || (crisisCount >= 4 && avgIntensity >= 6.5)) {
-      computedPhase = "crisis";
-      confidence = 0.90;
-    }
-    // B. Regression Risk Classification (Sustained positive/neutral baseline followed by sudden negative crash)
-    else if (
-      ["growth", "stabilization", "emergence", "resilience-building"].includes(this.emotionalPhase || "resilience-building") &&
+    // A. Regression Risk Classification (Sustained positive/neutral baseline followed by sudden negative crash)
+    if (
+      ["growth", "stabilization", "emergence", "resilience-building", "plateau"].includes(this.emotionalPhase || "resilience-building") &&
       activeMood && negativeMoods.includes(activeMood) && activeIntensity >= 7 &&
       n >= 4
     ) {
@@ -579,8 +568,22 @@ userSchema.methods.classifyAndUpdateEmotionalPhase = async function (recentMoodL
         confidence = 0.85;
       }
     }
+
+    // B. Crisis Classification (Sustained crisis or high intensity single-event crisis if not regression risk)
+    if (!computedPhase) {
+      const recent5 = logs.slice(0, 5);
+      const crisisCount = recent5.filter(l => crisisMoods.includes(l.mood)).length;
+      const avgIntensity = recent5.reduce((sum, l) => sum + (l.intensity || 5), 0) / (recent5.length || 1);
+
+      const activeMoodIsCrisis = activeMood && crisisMoods.includes(activeMood);
+      
+      if ((activeMoodIsCrisis && activeIntensity >= 7) || (crisisCount >= 4 && avgIntensity >= 6.5)) {
+        computedPhase = "crisis";
+        confidence = 0.90;
+      }
+    }
     // C. Emergence Classification (Sustained negative baseline followed by pivot to consecutive positive logs)
-    else if (n >= 5) {
+    if (!computedPhase && n >= 5) {
       // Newest 3 logs must be positive
       const newest3 = logs.slice(0, 3);
       const allNewest3Positive = newest3.length >= 3 && newest3.every(l => positiveMoods.includes(l.mood));
@@ -597,12 +600,16 @@ userSchema.methods.classifyAndUpdateEmotionalPhase = async function (recentMoodL
 
     // D. Growth, Stabilization, Plateau, Recovery Classification (evaluated when no candidate active phase matches)
     if (!computedPhase) {
-      const recent8 = logs.slice(0, 8);
-      const posCount = recent8.filter(l => positiveMoods.includes(l.mood)).length;
+      // F. Plateau Classification (Prolonged flatlining, repetitive neutral logs with short journal text)
+      const recent7 = logs.slice(0, 7);
+      const repetitiveCalmOrTired = recent7.every(l => ["Calm", "Tired"].includes(l.mood) && (l.intensity || 5) <= 5);
       
-      if (posCount >= 6 && activeMood && positiveMoods.includes(activeMood) && (this.streakCount || 0) >= 4) {
-        computedPhase = "growth";
-        confidence = 0.90;
+      const noteLengths = recent7.map(l => (l.note || "").trim().length);
+      const avgNoteLength = noteLengths.reduce((sum, len) => sum + len, 0) / (noteLengths.length || 1);
+
+      if (repetitiveCalmOrTired && avgNoteLength <= 15 && recent7.length >= 5) {
+        computedPhase = "plateau";
+        confidence = 0.75;
       }
       // E. Stabilization Classification (Crisis logs in history transitioning to Calm/low-intensity Tired baseline)
       else {
@@ -616,17 +623,14 @@ userSchema.methods.classifyAndUpdateEmotionalPhase = async function (recentMoodL
           computedPhase = "stabilization";
           confidence = 0.80;
         }
-        // F. Plateau Classification (Prolonged flatlining, repetitive neutral logs with short journal text)
+        // D. Growth Classification
         else {
-          const recent7 = logs.slice(0, 7);
-          const repetitiveCalmOrTired = recent7.every(l => ["Calm", "Tired"].includes(l.mood) && (l.intensity || 5) <= 5);
+          const recent8 = logs.slice(0, 8);
+          const posCount = recent8.filter(l => positiveMoods.includes(l.mood)).length;
           
-          const noteLengths = recent7.map(l => (l.note || "").trim().length);
-          const avgNoteLength = noteLengths.reduce((sum, len) => sum + len, 0) / (noteLengths.length || 1);
-
-          if (repetitiveCalmOrTired && avgNoteLength <= 15 && recent7.length >= 5) {
-            computedPhase = "plateau";
-            confidence = 0.75;
+          if (posCount >= 6 && activeMood && positiveMoods.includes(activeMood) && (this.streakCount || 0) >= 4) {
+            computedPhase = "growth";
+            confidence = 0.90;
           }
           // G. Recovery Classification (Post-burnout/crisis recovery with focus on gentle self-care)
           else {
