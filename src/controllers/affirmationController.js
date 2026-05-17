@@ -20,6 +20,7 @@ const User = require('../models/User');
 const { generateAffirmation, generateAffirmationStream } = require('../services/openaiService');
 const { sanitizePII } = require('../utils/piiSanitizer');
 const { AppError, asyncHandler } = require('../utils/appError');
+const { invalidateStats } = require('../utils/statsCache');
 const logger = require('../utils/logger');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -50,7 +51,7 @@ async function performPostGenerationUpdates({
       $push: {
         recentThematicTags: {
           $each: [thematicTag],
-          $slice: -10,
+          $slice: 10,
           $position: 0,
         },
       },
@@ -64,6 +65,7 @@ async function performPostGenerationUpdates({
     }
 
     await User.findByIdAndUpdate(userId, userPatch, { runValidators: false });
+    invalidateStats(userId);
 
     const userForStreak = await User.findById(userId);
     if (userForStreak) {

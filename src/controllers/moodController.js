@@ -9,6 +9,7 @@
 
 const MoodLog = require('../models/MoodLog');
 const { AppError, asyncHandler } = require('../utils/appError');
+const { invalidateStats } = require('../utils/statsCache');
 
 /**
  * POST /api/v1/mood
@@ -37,6 +38,7 @@ exports.logMood = asyncHandler(async (req, res) => {
 
   // Statefully persist the updated user document fields to MongoDB
   await req.user.save();
+    invalidateStats(req.user._id);
 
   res.status(201).json({
     status: 'success',
