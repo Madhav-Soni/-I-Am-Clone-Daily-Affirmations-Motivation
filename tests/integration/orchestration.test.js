@@ -550,5 +550,154 @@ describe("Wellness App Integration & Orchestration Suite", () => {
       expect(genRegression.status).toBe(200);
       expect(genRegression.body.data.affirmation.aiMetadata.emotionalPhase).toBe("regression-risk");
     });
+
+    // --- CASE 8: TEMPORAL EMOTIONAL MEMORY & DISTRESS SAFETY INTERVENTION ---
+    describe("8. Temporal Emotional Memory & Distress Safety Gating", () => {
+      let token;
+      let email;
+
+      beforeEach(async () => {
+        email = `safety-${Date.now()}@example.com`;
+        const regRes = await request(app)
+          .post("/api/v1/auth/register")
+          .send({
+            email,
+            password: "SecurePassword123!",
+            name: "Safety Warrior",
+            preferences: {
+              affirmationVoice: "gentle",
+              topics: ["Confidence", "Mindfulness"],
+              onboardingSelections: { voice: "gentle", categories: ["Confidence"] }
+            }
+          });
+        console.log("REGISTRATION_BODY:", regRes.status, regRes.body);
+        token = regRes.body.data?.accessToken || regRes.body.data?.token;
+
+        // Complete onboarding
+        await request(app)
+          .post("/api/v1/auth/onboarding/complete")
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            affirmationVoice: "gentle",
+            topicPreferences: ["Confidence"],
+            frequency: "daily"
+          });
+      });
+
+      it("should dynamically capture, evolve, and decay temporal reflection memory windows without fossilization", async () => {
+        // Stage 1: Log initial check-in containing historical self-doubt
+        const log1 = await request(app)
+          .post("/api/v1/mood")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ mood: "Sad", intensity: 7, note: "I am struggling so much, overwhelmed by fear and deep self-doubt." });
+        expect(log1.status).toBe(201);
+
+        // Fetch session and verify recent reflection summary holds the struggle
+        const session1 = await request(app)
+          .get("/api/v1/session/today?localHour=10")
+          .set("Authorization", `Bearer ${token}`);
+        expect(session1.status).toBe(200);
+        expect(session1.body.data.recentReflectionSummary).toBe("I am struggling so much, overwhelmed by fear and deep self-doubt.");
+        expect(session1.body.data.recentEmotionalTheme).toBe("emotional-processing");
+
+        // Stage 2: Log new positive check-in to trigger decay and shift to emergence/hope
+        const log2 = await request(app)
+          .post("/api/v1/mood")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ mood: "Hopeful", intensity: 8, note: "I feel quite hopeful today, emergence is real! stepping into confidence." });
+        expect(log2.status).toBe(201);
+
+        // Fetch session and verify temporal decay/shift:
+        // Recent summary should hold the hope note, and the struggle note should decay to mid-term summary
+        const session2 = await request(app)
+          .get("/api/v1/session/today?localHour=10")
+          .set("Authorization", `Bearer ${token}`);
+        expect(session2.status).toBe(200);
+        expect(session2.body.data.recentReflectionSummary).toBe("I feel quite hopeful today, emergence is real! stepping into confidence.");
+        expect(session2.body.data.midTermReflectionSummary).toBe("I am struggling so much, overwhelmed by fear and deep self-doubt.");
+        expect(session2.body.data.recentEmotionalTheme).toBe("emergent-confidence");
+        expect(session2.body.data.dominantEmotionalTheme).toBe("emergent-confidence");
+      });
+
+      it("should deterministic trigger acute-distress safety compassionate-hold, bypass OpenAI API, and serve human-written support", async () => {
+        // Log a mood containing severe despair keyword to trigger safety distress gating
+        const distressLog = await request(app)
+          .post("/api/v1/mood")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ mood: "Sad", intensity: 9, note: "I feel completely worthless and hopeless, I want to end this pain and just give up." });
+        expect(distressLog.status).toBe(201);
+
+        // Check unified hydration returns acute-distress & compassionate-hold
+        const sessionDistress = await request(app)
+          .get("/api/v1/session/today?localHour=10")
+          .set("Authorization", `Bearer ${token}`);
+        expect(sessionDistress.status).toBe(200);
+        expect(sessionDistress.body.data.distressRiskLevel).toBe("acute-distress");
+        expect(sessionDistress.body.data.supportMode).toBe("compassionate-hold");
+
+        // Call the AI generate endpoint and assert it bypasses AI to return human compassionate hold block
+        const genDistress = await request(app)
+          .post("/api/v1/ai/generate")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ category: "Confidence" });
+        
+        expect(genDistress.status).toBe(200);
+        expect(genDistress.body.data.affirmation.generatedBy).toBe("HUMAN_COMPASSIONATE_HOLD");
+        expect(genDistress.body.data.affirmation.isDistressSupport).toBe(true);
+        expect(genDistress.body.data.affirmation.content).toBe("This sounds heavy. You do not have to carry it alone.");
+        expect(genDistress.body.data.affirmation.supportResources.groundingPractice).toBeDefined();
+        expect(genDistress.body.data.affirmation.supportResources.crisisResources.length).toBeGreaterThan(0);
+      });
+
+      it("should apply conservative safety thresholding for mild sadness, bypassing distress escalation", async () => {
+        // Create another clean user
+        const cleanEmail = `clean-${Date.now()}@example.com`;
+        const regRes = await request(app)
+          .post("/api/v1/auth/register")
+          .send({
+            email: cleanEmail,
+            password: "SecurePassword123!",
+            name: "Clean User",
+            preferences: {
+              affirmationVoice: "gentle",
+              topics: ["Confidence"],
+              onboardingSelections: { voice: "gentle", categories: ["Confidence"] }
+            }
+          });
+        const cleanToken = regRes.body.data.accessToken;
+
+        await request(app)
+          .post("/api/v1/auth/onboarding/complete")
+          .set("Authorization", `Bearer ${cleanToken}`)
+          .send({
+            affirmationVoice: "gentle",
+            topicPreferences: ["Confidence"],
+            frequency: "daily"
+          });
+
+        // Log simple mild sadness note
+        const mildLog = await request(app)
+          .post("/api/v1/mood")
+          .set("Authorization", `Bearer ${cleanToken}`)
+          .send({ mood: "Sad", intensity: 5, note: "Feeling a bit down and sad today because it is raining outside." });
+        expect(mildLog.status).toBe(201);
+
+        // Fetch session and verify it does NOT trigger acute distress
+        const mildSession = await request(app)
+          .get("/api/v1/session/today?localHour=10")
+          .set("Authorization", `Bearer ${cleanToken}`);
+        expect(mildSession.status).toBe(200);
+        expect(mildSession.body.data.distressRiskLevel).toBe("normal");
+        expect(mildSession.body.data.supportMode).toBe("standard");
+
+        // Verify that ordinary AI generation completes successfully
+        const genMild = await request(app)
+          .post("/api/v1/ai/generate")
+          .set("Authorization", `Bearer ${cleanToken}`)
+          .send({ category: "Confidence" });
+        expect(genMild.status).toBe(200);
+        expect(genMild.body.data.affirmation.generatedBy).toBe("AI");
+      });
+    });
   });
 });

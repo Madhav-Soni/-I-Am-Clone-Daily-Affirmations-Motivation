@@ -1,5 +1,14 @@
-const MoodLog = require("../models/MoodLog");
-const { AppError, asyncHandler } = require("../utils/appError");
+'use strict';
+
+/**
+ * moodController.js
+ *
+ * Handles logging and retrieving user mood check-ins.
+ * Invokes the emotional phase transitions engine and the temporal memory / safety engine.
+ */
+
+const MoodLog = require('../models/MoodLog');
+const { AppError, asyncHandler } = require('../utils/appError');
 
 /**
  * POST /api/v1/mood
@@ -16,16 +25,21 @@ exports.logMood = asyncHandler(async (req, res) => {
     userId: req.user._id,
   });
 
-  // Dynamically analyze the user's emotional phase transition state in real-time
+  // Fetch recent mood logs history for the state machine engines
   const recentLogs = await MoodLog.find({ userId: req.user._id })
     .sort({ createdAt: -1 })
     .limit(15)
     .lean();
 
+  // Run the state machines
   await req.user.classifyAndUpdateEmotionalPhase(recentLogs, mood, intensity, note);
+  await req.user.processTemporalMemoryAndSafety(recentLogs, note);
+
+  // Statefully persist the updated user document fields to MongoDB
+  await req.user.save();
 
   res.status(201).json({
-    status: "success",
+    status: 'success',
     message: "Mood logged. Your next affirmation will reflect how you're feeling.",
     data: { moodLog },
   });
@@ -34,7 +48,6 @@ exports.logMood = asyncHandler(async (req, res) => {
 /**
  * GET /api/v1/mood
  * Returns the user's mood history with optional date range filtering.
- * Supports ?from=YYYY-MM-DD&to=YYYY-MM-DD&limit=30
  */
 exports.getMoodHistory = asyncHandler(async (req, res) => {
   const { from, to, limit = 30 } = req.query;
@@ -49,17 +62,16 @@ exports.getMoodHistory = asyncHandler(async (req, res) => {
 
   const moodLogs = await MoodLog.find(filter)
     .sort({ createdAt: -1 })
-    .limit(parseInt(limit))
+    .limit(parseInt(limit, 10))
     .lean();
 
-  // Compute a simple mood frequency breakdown for the client to display
   const moodFrequency = moodLogs.reduce((acc, log) => {
     acc[log.mood] = (acc[log.mood] || 0) + 1;
     return acc;
   }, {});
 
   res.status(200).json({
-    status: "success",
+    status: 'success',
     data: { moodLogs, moodFrequency },
   });
 });
@@ -74,7 +86,7 @@ exports.getLatestMood = asyncHandler(async (req, res) => {
     .lean();
 
   res.status(200).json({
-    status: "success",
+    status: 'success',
     data: { moodLog: moodLog || null },
   });
 });

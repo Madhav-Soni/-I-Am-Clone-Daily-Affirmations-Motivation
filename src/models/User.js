@@ -153,6 +153,53 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 1.0,
     },
+    // ── C-3 Layered Temporal Memory Windows ────────────────────────────────
+    recentEmotionalTheme: {
+      type: String,
+      default: 'resilience',
+    },
+    dominantEmotionalTheme: {
+      type: String,
+      default: 'resilience',
+    },
+    recentReflectionSummary: {
+      type: String,
+      default: '',
+    },
+    midTermReflectionSummary: {
+      type: String,
+      default: '',
+    },
+    identityMemory: {
+      values: { type: [String], default: [] },
+      enduringPreferences: { type: [String], default: [] },
+      metaphorAffinities: { type: [String], default: [] },
+    },
+    archivedPhases: {
+      type: [String],
+      default: [],
+    },
+    lastThemeShiftAt: {
+      type: Date,
+    },
+    // ── C-4 Distress Intervention Layer ───────────────────────────────────
+    distressRiskLevel: {
+      type: String,
+      enum: ['normal', 'vulnerable', 'elevated-distress', 'acute-distress'],
+      default: 'normal',
+    },
+    distressSignals: {
+      type: [String],
+      default: [],
+    },
+    supportMode: {
+      type: String,
+      enum: ['standard', 'compassionate-hold'],
+      default: 'standard',
+    },
+    lastDistressInterventionAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -638,6 +685,112 @@ userSchema.methods.classifyAndUpdateEmotionalPhase = async function (recentMoodL
     phaseConfidence: this.phaseConfidence,
     isTransitioned,
   };
+};
+
+/**
+ * Process temporal reflection memory windows, decay weightings, and safety distress gating.
+ */
+userSchema.methods.processTemporalMemoryAndSafety = async function (logs, currentNote) {
+  const now = new Date();
+  const noteText = (currentNote || '').trim();
+
+  // 1. Distress Gating & Safety Detection
+  const DISTRESS_KEYWORDS = [
+    'suicidal', 'hopeless', 'worthless', 'crisis', 'desperate',
+    'want to die', 'self harm', 'self-harm', 'end my life',
+    'give up', "can't go on", 'end this pain', 'completely useless'
+  ];
+
+  const hasDespairKeyword = DISTRESS_KEYWORDS.some(kw => 
+    noteText.toLowerCase().includes(kw)
+  );
+
+  // Check repeated severe log states (3 consecutive sadness/anxiety check-ins with intensity >= 9)
+  const last3 = logs.slice(0, 3);
+  const isRepeatedSevere = last3.length >= 3 && last3.every(l => 
+    ['Sad', 'Anxious'].includes(l.mood) && (l.intensity || 5) >= 9
+  );
+
+  if (hasDespairKeyword || isRepeatedSevere) {
+    this.distressRiskLevel = 'acute-distress';
+    this.supportMode = 'compassionate-hold';
+    this.lastDistressInterventionAt = now;
+    if (hasDespairKeyword) {
+      this.distressSignals = [...new Set([...(this.distressSignals || []), 'despair-language'])];
+    }
+    if (isRepeatedSevere) {
+      this.distressSignals = [...new Set([...(this.distressSignals || []), 'repeated-severe-intensity'])];
+    }
+  } else {
+    // Check for mild/ordinary sad/anxious logs for conservative safety thresholding
+    const latestMood = logs[0];
+    if (latestMood && ['Sad', 'Anxious'].includes(latestMood.mood)) {
+      const intensity = latestMood.intensity || 5;
+      if (intensity >= 8) {
+        this.distressRiskLevel = 'elevated-distress';
+        this.supportMode = 'standard';
+      } else if (intensity >= 6) {
+        this.distressRiskLevel = 'vulnerable';
+        this.supportMode = 'standard';
+      } else {
+        this.distressRiskLevel = 'normal';
+        this.supportMode = 'standard';
+      }
+    } else {
+      this.distressRiskLevel = 'normal';
+      this.supportMode = 'standard';
+    }
+  }
+
+  // 2. Temporal Emotional Memory Layer & Decay Weighting
+  if (noteText) {
+    // Cycle and decay recentReflectionSummary -> midTermReflectionSummary
+    if (this.recentReflectionSummary) {
+      this.midTermReflectionSummary = this.recentReflectionSummary;
+    }
+    this.recentReflectionSummary = noteText;
+    this.lastThemeShiftAt = now;
+
+    // Detect positivity shift / emergence turnaround
+    const isEmergentPositive = /hope|emerg|confident|gratitude|joy|peace|happy|grow/i.test(noteText);
+    if (isEmergentPositive) {
+      if (this.recentEmotionalTheme && this.recentEmotionalTheme !== 'emergent-confidence') {
+        this.archivedPhases = [...new Set([...(this.archivedPhases || []), this.recentEmotionalTheme])];
+      }
+      this.recentEmotionalTheme = 'emergent-confidence';
+      this.dominantEmotionalTheme = 'emergent-confidence';
+    } else {
+      this.recentEmotionalTheme = 'emotional-processing';
+    }
+
+    // Extract motifs for long-term values/preferences memory
+    const valueKeywords = {
+      family: 'family closeness',
+      work: 'professional integrity',
+      integrity: 'personal honesty',
+      health: 'bodily care',
+      nature: 'connection with earth',
+      honesty: 'authenticity'
+    };
+    for (const [kw, val] of Object.entries(valueKeywords)) {
+      if (noteText.toLowerCase().includes(kw)) {
+        this.identityMemory.values = [...new Set([...(this.identityMemory.values || []), val])];
+      }
+    }
+
+    const metaphorKeywords = {
+      breath: 'breathe cycles',
+      ocean: 'tides',
+      art: 'painting/craft',
+      music: 'resonance',
+      nature: 'seasons'
+    };
+    for (const [kw, met] of Object.entries(metaphorKeywords)) {
+      if (noteText.toLowerCase().includes(kw)) {
+        this.identityMemory.metaphorAffinities = [...new Set([...(this.identityMemory.metaphorAffinities || []), met])];
+      }
+    }
+  }
 };
 
 // ─── Indexes ─────────────────────────────────────────────────────────────────

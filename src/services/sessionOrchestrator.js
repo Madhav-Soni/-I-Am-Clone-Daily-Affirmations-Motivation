@@ -127,5 +127,14 @@ exports.getTodaySessionState = async (user, localHour) => {
     previousPhase: user.previousPhase || "resilience-building",
     phaseTransitionFlag: user.phaseTransitionFlag || false,
     phaseConfidence: user.phaseConfidence || 1.0,
+    distressRiskLevel: user.distressRiskLevel || "normal",
+    supportMode: user.supportMode || "standard",
+    recentEmotionalTheme: user.recentEmotionalTheme || "resilience",
+    dominantEmotionalTheme: user.dominantEmotionalTheme || "resilience",
+    recentReflectionSummary: user.recentReflectionSummary || "",
+    midTermReflectionSummary: user.midTermReflectionSummary || "",
+    identityMemory: user.identityMemory || { values: [], enduringPreferences: [], metaphorAffinities: [] },
+    archivedPhases: user.archivedPhases || [],
+    lastThemeShiftAt: user.lastThemeShiftAt || null,
   };
 };

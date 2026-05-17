@@ -20,8 +20,15 @@ const affirmationSchema = new mongoose.Schema(
     },
     generatedBy: {
       type: String,
-      enum: ["AI", "SYSTEM"],
+      enum: ["AI", "SYSTEM", "HUMAN_COMPASSIONATE_HOLD"],
       required: true,
+    },
+    isDistressSupport: {
+      type: Boolean,
+      default: false,
+    },
+    supportResources: {
+      type: mongoose.Schema.Types.Mixed,
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
