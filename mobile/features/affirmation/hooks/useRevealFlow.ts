@@ -122,7 +122,6 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
             category: options.category ?? "General",
             mood: normalizedMood,
             note: note || "",
-            context,
           },
           { signal }
         );
