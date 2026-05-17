@@ -4,7 +4,7 @@ const router = express.Router();
 const moodController = require("../../controllers/moodController");
 const statsController = require("../../controllers/statsController");
 const { protect } = require("../../middleware/auth");
-const { moodLogValidator } = require("../validators/moodValidators");
+const { moodLogValidator } = require("../../middleware/validators/moodValidators");
 
 router.use(protect);
 

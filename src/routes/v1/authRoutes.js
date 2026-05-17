@@ -7,7 +7,7 @@ const {
   registerValidator,
   loginValidator,
   onboardingValidator,
-} = require("../validators/authValidators");
+} = require("../../middleware/validators/authValidators");
 
 // Public
 router.post("/register", registerValidator, authController.register);

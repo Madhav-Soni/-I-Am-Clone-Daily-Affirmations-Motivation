@@ -22,4 +22,7 @@ export const endpoints = {
     latest: `${API_PREFIX}/mood/latest`,
   },
   stats: `${API_PREFIX}/user/stats`,
+  session: {
+    today: `${API_PREFIX}/session/today`,
+  },
 } as const;

@@ -6,7 +6,7 @@ const { protect } = require("../../middleware/auth");
 const {
   generateAffirmationValidator,
   affirmationIdValidator,
-} = require("../validators/affirmationValidators");
+} = require("../../middleware/validators/affirmationValidators");
 
 // All routes require authentication
 router.use(protect);

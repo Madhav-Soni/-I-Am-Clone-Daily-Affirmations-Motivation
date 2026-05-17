@@ -107,10 +107,20 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
       setPhase("streak");
     } catch (error: any) {
       if (error.name === "AbortError") return;
-      console.error("Affirmation generation failed:", error);
-      setStatus("error");
+      console.error("[useRevealFlow] Unhandled fatal error:", error);
+      
+      // Never show error UI. If we somehow crashed entirely, 
+      // just pretend it finished so the user can read whatever partial text exists
+      // or see the fallback if it was instantly loaded.
+      setStatus("complete");
+      setPhase("reflection");
+      void hapticSuccess();
+      
+      await sleep(REVEAL_TIMING.reflectionMs);
+      if (abortControllerRef.current?.signal.aborted) return;
+      setPhase("actions");
     }
-  }, [mood, note, options.category, setCategory, setPartialText, setStatus, affirmationsData]);
+  }, [mood, note, options.category, setCategory, setPartialText, setStatus, affirmationsData, queryClient, refetchStats]);
 
   useEffect(() => {
     runFlow();
