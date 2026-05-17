@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore } from "@/store";
+import { secureStorage, storageKeys } from "@/services/storage/secureStorage";
+import { authApi } from "@/services/api/modules/auth";
 
-/**
- * Bootstrap hook — splash screen and session hydration flags.
- * API session restore will be added in a later phase.
- */
 export function useBootstrap() {
   const [isReady, setIsReady] = useState(false);
 
@@ -15,11 +13,31 @@ export function useBootstrap() {
 
   useEffect(() => {
     const prepare = async () => {
-      // Placeholder hydration — marks store ready without API calls.
-      useAuthStore.getState().setHydrated(true);
-      useAuthStore.getState().setStatus("unauthenticated");
-      setIsReady(true);
-      await SplashScreen.hideAsync();
+      try {
+        const token = await secureStorage.getItem(storageKeys.accessToken);
+        if (token) {
+          try {
+            const response = await authApi.getMe();
+            if (response?.data?.user) {
+              useAuthStore.getState().setUser(response.data.user);
+              useAuthStore.getState().setStatus("authenticated");
+            } else {
+              await useAuthStore.getState().logout();
+            }
+          } catch {
+            // Profile fetch failed, might need to re-auth or refresh
+            await useAuthStore.getState().logout();
+          }
+        } else {
+          useAuthStore.getState().setStatus("unauthenticated");
+        }
+      } catch {
+        useAuthStore.getState().setStatus("unauthenticated");
+      } finally {
+        useAuthStore.getState().setHydrated(true);
+        setIsReady(true);
+        await SplashScreen.hideAsync();
+      }
     };
 
     prepare().catch(() => undefined);
