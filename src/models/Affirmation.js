@@ -11,7 +11,7 @@ const affirmationSchema = new mongoose.Schema(
     category: {
       type: String,
       required: [true, "Category is required"],
-      enum: ["Career", "Health", "Confidence", "Relationships", "Mindfulness", "Gratitude", "Productivity", "General"],
+      maxlength: [100, "Category cannot exceed 100 characters"],
       default: "General",
     },
     isFavorite: {
