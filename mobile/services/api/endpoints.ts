@@ -1,4 +1,4 @@
-const API_PREFIX = "/v1";
+const API_PREFIX = "";
 
 export const endpoints = {
   auth: {
