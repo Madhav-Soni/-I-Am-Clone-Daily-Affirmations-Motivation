@@ -47,6 +47,19 @@ async function performPostGenerationUpdates({
       aiMetadata,
     });
 
+    // Companion: mood-matched favorite older than 60 days
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    const companionAffirmation = mood
+      ? await Affirmation.findOne({
+          userId,
+          mood,
+          isFavorite: true,
+          createdAt: { $lt: sixtyDaysAgo },
+        })
+        .sort({ createdAt: -1 })
+        .lean()
+      : null;
+
     const userPatch = {
       $push: {
         recentThematicTags: {
@@ -73,7 +86,7 @@ async function performPostGenerationUpdates({
       await userForStreak.save();
     }
 
-    return { affirmation };
+    return { affirmation, companionAffirmation };
   } catch (dbErr) {
     console.error("DB_ERROR_DETAILS:", dbErr);
     logger.error('Post-generation DB update failed', {
@@ -311,7 +324,7 @@ const generateAffirmationHandler = asyncHandler(async (req, res, next) => {
       });
     }
 
-    let affirmation;
+    let affirmation, companionAffirmation;
     if (result.content) {
       const updates = await performPostGenerationUpdates({
         userId,
@@ -325,12 +338,14 @@ const generateAffirmationHandler = asyncHandler(async (req, res, next) => {
         note: latestMood?.note,
       });
       affirmation = updates.affirmation;
+      companionAffirmation = updates.companionAffirmation;
     }
 
     res.status(200).json({
       status: 'success',
       data: {
         affirmation,
+        companionAffirmation: companionAffirmation || null,
       },
     });
   }

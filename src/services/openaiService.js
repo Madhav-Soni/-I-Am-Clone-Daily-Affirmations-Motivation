@@ -33,7 +33,10 @@ const openai = new OpenAI({
   baseURL: process.env.OPENAI_BASE_URL,
 });
 
-const MODEL = process.env.OPENAI_MODEL || 'llama-3.1-8b-instant';
+function getModel(isPremium = false) {
+  if (isPremium) return process.env.OPENAI_MODEL_PREMIUM || 'llama-3.1-70b-versatile';
+  return process.env.OPENAI_MODEL || 'llama-3.1-8b-instant';
+}
 
 /** Generation timeout — 28s leaves buffer before most gateway 30s hard timeouts */
 const GENERATION_TIMEOUT_MS = 28_000;
@@ -309,7 +312,7 @@ async function generateAffirmation({ user, latestMood, category }) {
   try {
     const response = await openai.chat.completions.create(
       {
-        model: MODEL,
+        model: getModel(user.isPremium),
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -335,7 +338,7 @@ async function generateAffirmation({ user, latestMood, category }) {
       moodSafety,
       crisisResponse: null,
       aiMetadata: {
-        model: MODEL,
+        model: getModel(user.isPremium),
         promptTokens: response.usage?.prompt_tokens || 60,
         completionTokens: response.usage?.completion_tokens || 22,
         moodContext: latestMood?.mood || null,
@@ -380,7 +383,7 @@ async function generateAffirmationStream({ user, latestMood, category, res }) {
   try {
     const stream = await openai.chat.completions.create(
       {
-        model: MODEL,
+        model: getModel(user.isPremium),
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -419,7 +422,7 @@ async function generateAffirmationStream({ user, latestMood, category, res }) {
       newRegisterId,
       moodSafety,
       aiMetadata: {
-        model: MODEL,
+        model: getModel(user.isPremium),
         promptTokens: 60,
         completionTokens: 22,
         moodContext: latestMood?.mood || null,
