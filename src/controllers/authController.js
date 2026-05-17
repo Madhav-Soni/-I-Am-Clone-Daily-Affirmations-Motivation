@@ -103,7 +103,7 @@ exports.refreshToken = asyncHandler(async (req, res, next) => {
  * Revokes the stored refresh token.
  */
 exports.logout = asyncHandler(async (req, res) => {
-  req.user.refreshToken = undefined;
+  req.user.refreshToken = null;
   await req.user.save({ validateBeforeSave: false });
 
   res.status(200).json({ status: "success", message: "Logged out successfully." });
