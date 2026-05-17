@@ -38,6 +38,7 @@ exports.getUserStats = asyncHandler(async (req, res) => {
     data: {
       streak: {
         current: req.user.streakCount,
+        lifetimeRituals: req.user.lifetimeRitualCount || 0,
         lastActiveAt: req.user.lastActiveAt,
       },
       affirmations: {

@@ -16,6 +16,8 @@ import { routes } from "@/constants/routes";
 import { FullscreenScreen } from "@/shared/components/primitives/FullscreenScreen";
 import { hapticLight } from "@/shared/lib/haptics";
 import { Text } from "@/shared/components/primitives/Text";
+import { useUserStats } from "@/features/profile/hooks/useUserStats";
+
 
 type AffirmationRevealExperienceProps = {
   category?: string | null;
@@ -25,6 +27,7 @@ export function AffirmationRevealExperience({ category }: AffirmationRevealExper
   const { phase, partialText, isStreaming, cancel } = useRevealFlow({ category });
   const resetCheckIn = useCheckInDraftStore((s) => s.reset);
   const [saved, setSaved] = useState(false);
+  const { data: statsData } = useUserStats();
 
   const handleDismiss = useCallback(() => {
     cancel();
@@ -97,7 +100,11 @@ export function AffirmationRevealExperience({ category }: AffirmationRevealExper
               void hapticLight();
               router.push({
                 pathname: routes.modals.streakCelebration,
-                params: { days: "7" },
+                params: { 
+                  days: statsData?.streak?.current?.toString() || "1",
+                  lifetime: statsData?.streak?.lifetimeRituals?.toString() || "1",
+                  compassionRecovery: (statsData?.streak?.current === 1 && (statsData?.streak?.lifetimeRituals ?? 0) > 1) ? "true" : "false"
+                },
               });
             }}
           >

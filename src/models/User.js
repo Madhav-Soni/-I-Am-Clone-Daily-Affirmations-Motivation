@@ -72,6 +72,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    lifetimeRitualCount: {
+      type: Number,
+      default: 0,
+    },
     lastActiveAt: {
       type: Date,
       default: () => new Date(),
@@ -150,21 +154,38 @@ userSchema.methods.checkAndIncrementDailyLimit = async function () {
 
 /**
  * Update streak: increment if active yesterday, reset if a day was missed.
+ * Tracks lifetime ritual counts and returns whether a compassion recovery was triggered.
  */
 userSchema.methods.updateStreak = async function () {
   const now = new Date();
   const last = new Date(this.lastActiveAt);
   const diffDays = Math.floor((now - last) / (1000 * 60 * 60 * 24));
 
+  // Always increment lifetime count for a new session
+  // If diffDays === 0, it means multiple sessions in same day. We don't increment streak,
+  // but do we increment lifetime? Let's say lifetime is also once per day to align with streaks.
+  if (diffDays > 0 || this.lifetimeRitualCount === 0) {
+    this.lifetimeRitualCount += 1;
+  }
+
+  let compassionRecovery = false;
+
   if (diffDays === 1) {
     this.streakCount += 1;
   } else if (diffDays > 1) {
     this.streakCount = 1;
+    compassionRecovery = true;
   }
-  // diffDays === 0: same day, no change
+  // diffDays === 0: same day, no change to streak
 
   this.lastActiveAt = now;
   await this.save();
+
+  return {
+    streakCount: this.streakCount,
+    lifetimeRitualCount: this.lifetimeRitualCount,
+    compassionRecovery,
+  };
 };
 
 // ─── Indexes ─────────────────────────────────────────────────────────────────

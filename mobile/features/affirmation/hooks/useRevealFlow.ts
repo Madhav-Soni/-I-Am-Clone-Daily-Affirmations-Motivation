@@ -9,6 +9,8 @@ import { useGenerationStore } from "@/store";
 import { contextComposer } from "@/services/ai/contextComposer";
 import { useAffirmations } from "@/features/library/hooks/useAffirmations";
 import { useAuthStore } from "@/store/slices/authSlice";
+import { useUserStats } from "@/features/profile/hooks/useUserStats";
+import { useQueryClient } from "@tanstack/react-query";
 
 export type RevealPhase =
   | "anticipation"
@@ -36,6 +38,8 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
   const reset = useGenerationStore((s) => s.reset);
 
   const { data: affirmationsData } = useAffirmations();
+  const { data: userStats, refetch: refetchStats } = useUserStats();
+  const queryClient = useQueryClient();
 
   const runFlow = useCallback(async () => {
     // Abort any existing request
@@ -88,6 +92,10 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
       setStatus("complete");
       setPhase("reflection");
       void hapticSuccess();
+
+      // Refetch user stats to get the updated streak and lifetime count
+      await queryClient.invalidateQueries({ queryKey: ["user", "stats"] });
+      await refetchStats();
 
       await sleep(REVEAL_TIMING.reflectionMs);
       if (abortControllerRef.current.signal.aborted) return;

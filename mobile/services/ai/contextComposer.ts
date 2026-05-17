@@ -61,14 +61,34 @@ export const contextComposer = {
     return "stable";
   },
 
-  /**
-   * Detects repeated themes across recent affirmations.
-   */
   extractThemes(history: any[]): string[] {
     const themes: string[] = [];
     // Extract categories or keywords from history
     const recentCategories = history.slice(0, 5).map((a) => a.category);
     const unique = Array.from(new Set(recentCategories));
     return unique.filter(Boolean) as string[];
+  },
+
+  /**
+   * Generates an emotional continuity greeting for the home screen.
+   */
+  generateHomeGreeting(recentAffirmations: any[], recentMoods: any[]): string {
+    if (!recentAffirmations?.length && !recentMoods?.length) {
+      return "Welcome to your personal space.";
+    }
+
+    const lastMood = recentMoods?.[0]?.mood;
+    const themes = this.extractThemes(recentAffirmations);
+
+    if (themes.length > 0) {
+      const topTheme = themes[0].toLowerCase();
+      return `Your recent affirmations have centered around ${topTheme}.`;
+    }
+
+    if (lastMood) {
+      return `You've been feeling ${lastMood.toLowerCase()} lately.`;
+    }
+
+    return "Continue where you left off.";
   },
 };

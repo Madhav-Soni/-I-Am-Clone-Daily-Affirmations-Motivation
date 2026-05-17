@@ -22,13 +22,19 @@ import { RevealCloseButton } from "@/features/affirmation/components/RevealClose
 import { FullscreenScreen, GlassCard, PrimaryButton, Text } from "@/shared/components/primitives";
 import { hapticSuccess } from "@/shared/lib/haptics";
 
+import { COMPASSION_COPY } from "@/features/streak/constants/celebration";
+
 type StreakCelebrationExperienceProps = {
   streakDays?: number;
+  lifetimeRituals?: number;
+  compassionRecovery?: boolean;
 };
 
-export function StreakCelebrationExperience({ streakDays }: StreakCelebrationExperienceProps) {
-  const data = useMemo(() => createMockStreakData(streakDays), [streakDays]);
-  const copy = MILESTONE_COPY[data.milestone];
+export function StreakCelebrationExperience({ streakDays, lifetimeRituals, compassionRecovery }: StreakCelebrationExperienceProps) {
+  const data = useMemo(() => createMockStreakData(streakDays, lifetimeRituals, compassionRecovery), [streakDays, lifetimeRituals, compassionRecovery]);
+  
+  const isRecovery = data.compassionRecovery;
+  const copy = isRecovery ? COMPASSION_COPY : MILESTONE_COPY[data.milestone];
   const ringProgress = progressToNextMilestone(data);
 
   useEffect(() => {
@@ -48,7 +54,7 @@ export function StreakCelebrationExperience({ streakDays }: StreakCelebrationExp
 
   return (
     <FullscreenScreen
-      gradient="ember"
+      gradient={isRecovery ? "aurora" : "ember"}
       blobConfigs={CELEBRATION_BLOBS}
       padded={false}
       contentClassName="flex-1"
@@ -59,7 +65,7 @@ export function StreakCelebrationExperience({ streakDays }: StreakCelebrationExp
       </View>
 
       <Animated.View entering={celebrationBloom} style={styles.body}>
-        <StreakFlameHero milestone={data.milestone} />
+        {!isRecovery && <StreakFlameHero milestone={data.milestone} />}
 
         <Animated.View entering={celebrationCopyEnter} style={styles.copyBlock}>
           <Text variant="overline" color="gold" align="center" style={styles.overline}>
@@ -75,12 +81,14 @@ export function StreakCelebrationExperience({ streakDays }: StreakCelebrationExp
           </GlassCard>
         </Animated.View>
 
-        <StreakProgressRing data={data} progress={ringProgress} />
+        {!isRecovery && <StreakProgressRing data={data} progress={ringProgress} />}
 
         <Animated.View entering={celebrationMilestoneEnter} style={styles.milestoneWrap}>
           <GlassCard animated={false} padding="md" intensity={36}>
             <Text variant="caption" color="accent" align="center">
-              {copy.milestoneMessage}
+              {isRecovery 
+                ? COMPASSION_COPY.milestoneMessage(data.lifetimeRituals)
+                : (copy as any).milestoneMessage}
             </Text>
           </GlassCard>
         </Animated.View>

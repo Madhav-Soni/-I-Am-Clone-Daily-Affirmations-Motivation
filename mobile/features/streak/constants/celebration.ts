@@ -7,6 +7,8 @@ export const MILESTONE_DAYS: MilestoneDay[] = [3, 7, 14, 30];
 
 export type MockStreakData = {
   currentStreak: number;
+  lifetimeRituals: number;
+  compassionRecovery: boolean;
   milestone: MilestoneDay;
   previousMilestone: MilestoneDay | null;
   nextMilestone: MilestoneDay | null;
@@ -84,9 +86,22 @@ export const MILESTONE_COPY: Record<MilestoneDay, MilestoneCopy> = {
   },
 };
 
+export const COMPASSION_COPY = {
+  overline: "Welcome back",
+  headline: "You returned. That matters.",
+  reinforcement: "Small returns still count. Consistency is built gently.",
+  milestoneMessage: (lifetime: number) => `You've completed ${lifetime} rituals in total. Your journey continues.`,
+};
+
 /** Mock streak payload — replace with API stats later */
-export function createMockStreakData(streakDays?: number): MockStreakData {
+export function createMockStreakData(
+  streakDays?: number,
+  lifetimeRituals?: number,
+  compassionRecovery?: boolean
+): MockStreakData {
   const current = streakDays ?? 7;
+  const lifetime = lifetimeRituals ?? current;
+  const isRecovery = compassionRecovery ?? false;
   const milestone = resolveMilestone(current);
   const milestoneIndex = MILESTONE_DAYS.indexOf(milestone);
   const previousMilestone = milestoneIndex > 0 ? MILESTONE_DAYS[milestoneIndex - 1] : null;
@@ -95,6 +110,8 @@ export function createMockStreakData(streakDays?: number): MockStreakData {
 
   return {
     currentStreak: current,
+    lifetimeRituals: lifetime,
+    compassionRecovery: isRecovery,
     milestone,
     previousMilestone,
     nextMilestone,
