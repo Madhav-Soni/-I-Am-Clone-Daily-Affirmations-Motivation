@@ -19,7 +19,20 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+// Responsive dimensions that dynamically scale down for smaller Android viewports to ensure controls fit
+const MAX_CARD_WIDTH = SCREEN_WIDTH * 0.72;
+const MAX_CARD_HEIGHT = SCREEN_HEIGHT * 0.42;
+
+// Maintain exactly 16:9 aspect ratio
+let CARD_WIDTH = MAX_CARD_WIDTH;
+let CARD_HEIGHT = CARD_WIDTH * 1.7777;
+
+if (CARD_HEIGHT > MAX_CARD_HEIGHT) {
+  CARD_HEIGHT = MAX_CARD_HEIGHT;
+  CARD_WIDTH = CARD_HEIGHT / 1.7777;
+}
 
 export default function ShareAffirmationModal() {
   const params = useLocalSearchParams<{
@@ -67,12 +80,14 @@ export default function ShareAffirmationModal() {
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          bounces={true}
         >
-          <View className="px-8 pt-16 mb-10">
-            <Text variant="display" align="center" className="text-3xl mb-3 font-serif">
+          {/* Top Spacing tuned to sit beautifully below the SafeAreaView status bar in a compact height */}
+          <View className="px-8 pt-8 mb-6">
+            <Text variant="display" align="center" className="text-2xl mb-2 font-serif">
               Share your light
             </Text>
-            <Text variant="body" color="muted" align="center" className="px-6">
+            <Text variant="body" color="muted" align="center" className="px-6 text-sm">
               Export this affirmation as a cinematic memory to inspire others.
             </Text>
           </View>
@@ -80,7 +95,7 @@ export default function ShareAffirmationModal() {
           <View style={styles.previewContainer}>
             <Animated.View 
               entering={FadeInDown.delay(200).duration(800).springify().damping(15)}
-              style={styles.cardWrapper}
+              style={[styles.cardWrapper, { width: CARD_WIDTH, height: CARD_HEIGHT }]}
             >
               <ShareableAffirmationCard
                 ref={cardRef}
@@ -90,6 +105,8 @@ export default function ShareAffirmationModal() {
                 category={params.category ? String(params.category) : undefined}
                 note={params.note ? String(params.note) : undefined}
                 timestamp={params.timestamp ? String(params.timestamp) : undefined}
+                width={CARD_WIDTH}
+                height={CARD_HEIGHT}
               />
               
               {/* Shimmer Effect Overlay */}
@@ -99,8 +116,8 @@ export default function ShareAffirmationModal() {
             </Animated.View>
           </View>
 
-          <View className="mt-12 px-8">
-            <Text variant="caption" color="muted" className="uppercase tracking-[3px] mb-6 text-center">
+          <View className="mt-6 px-8 mb-8">
+            <Text variant="caption" color="muted" className="uppercase tracking-[3px] mb-4 text-center text-xs">
               Choose your theme
             </Text>
             <ScrollView 
@@ -124,11 +141,12 @@ export default function ShareAffirmationModal() {
           </View>
         </ScrollView>
 
+        {/* Bottom actions container */}
         <Animated.View 
           entering={FadeInDown.delay(600).duration(600)}
-          className="p-8 pb-12 bg-black/40 backdrop-blur-3xl border-t border-white/5"
+          className="p-6 pb-8 bg-black/40 backdrop-blur-3xl border-t border-white/5"
         >
-          <View className="flex-row gap-4 mb-4">
+          <View className="flex-row gap-4 mb-3">
             <View className="flex-1">
               <Button
                 onPress={handleSave}
@@ -198,21 +216,21 @@ function ThemeOption({
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 160,
+    paddingBottom: 24,
   },
   previewContainer: {
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 8,
   },
   cardWrapper: {
-    borderRadius: 32,
+    borderRadius: 24,
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 30 },
-    shadowOpacity: 0.6,
-    shadowRadius: 50,
-    elevation: 20,
-    transform: [{ scale: 0.8 }],
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.5,
+    shadowRadius: 25,
+    elevation: 15,
     backgroundColor: "#000",
   },
   shimmer: {
@@ -220,15 +238,13 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   themePicker: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 4,
     gap: 12,
-    justifyContent: "center",
-    width: "100%",
   },
   themeOption: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 16,
     backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.05)",

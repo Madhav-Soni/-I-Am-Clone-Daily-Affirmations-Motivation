@@ -17,6 +17,8 @@ type ShareableAffirmationCardProps = {
   note?: string;
   timestamp?: string;
   theme?: ShareTheme;
+  width?: number;
+  height?: number;
 };
 
 const THEME_GRADIENTS: Record<ShareTheme, GradientDefinition | null> = {
@@ -28,7 +30,9 @@ const THEME_GRADIENTS: Record<ShareTheme, GradientDefinition | null> = {
 };
 
 export const ShareableAffirmationCard = React.forwardRef<View, ShareableAffirmationCardProps>(
-  ({ content, mood, category, note, timestamp, theme = "void" }, ref) => {
+  ({ content, mood, category, note, timestamp, theme = "void", width: customWidth, height: customHeight }, ref) => {
+    const cardWidth = customWidth || CARD_WIDTH;
+    const cardHeight = customHeight || CARD_HEIGHT;
     const gradient = THEME_GRADIENTS[theme];
     const isMinimal = theme === "minimal";
 
@@ -41,17 +45,31 @@ export const ShareableAffirmationCard = React.forwardRef<View, ShareableAffirmat
       });
     }, [timestamp]);
 
-    // Adaptive Typography: Scale font size based on content length
+    // Adaptive Typography: Scale font size based on content length and card width
     const fontSize = useMemo(() => {
       const length = content.length;
-      if (length < 60) return 48;
-      if (length < 120) return 40;
-      if (length < 200) return 32;
-      return 28;
-    }, [content]);
+      let baseSize = 48;
+      if (length < 60) baseSize = 48;
+      else if (length < 120) baseSize = 40;
+      else if (length < 200) baseSize = 32;
+      else baseSize = 26;
+
+      // Scale factor dynamically proportional to 390 (average viewport width)
+      const scaleFactor = cardWidth / 390;
+      return Math.max(16, Math.round(baseSize * scaleFactor));
+    }, [content, cardWidth]);
+
+    const noteFontSize = Math.max(11, Math.round(18 * (cardWidth / 390)));
+    const brandingFontSize = Math.max(8, Math.round(10 * (cardWidth / 390)));
+    const moodFontSize = Math.max(8, Math.round(10 * (cardWidth / 390)));
+    const dateFontSize = Math.max(8, Math.round(10 * (cardWidth / 390)));
 
     return (
-      <View ref={ref} style={styles.container} collapsable={false}>
+      <View 
+        ref={ref} 
+        style={[styles.container, { width: cardWidth, height: cardHeight }]} 
+        collapsable={false}
+      >
         {gradient ? (
           <LinearGradient
             colors={gradient.colors as unknown as [string, string, ...string[]]}
@@ -71,10 +89,23 @@ export const ShareableAffirmationCard = React.forwardRef<View, ShareableAffirmat
           </>
         )}
 
-        <View style={styles.content}>
+        <View 
+          style={[
+            styles.content, 
+            { 
+              paddingHorizontal: cardWidth * 0.12, 
+              paddingTop: cardHeight * 0.12, 
+              paddingBottom: cardHeight * 0.12 
+            }
+          ]}
+        >
           <View style={styles.header}>
             <Text 
-              style={[styles.branding, isMinimal && { color: "#000", opacity: 0.4 }]}
+              style={[
+                styles.branding, 
+                { fontSize: brandingFontSize, letterSpacing: brandingFontSize * 0.5 },
+                isMinimal && { color: "#000", opacity: 0.4 }
+              ]}
             >
               I AM WELL • {category || "GENERAL"}
             </Text>
@@ -84,7 +115,7 @@ export const ShareableAffirmationCard = React.forwardRef<View, ShareableAffirmat
             <Text
               style={[
                 styles.affirmationText, 
-                { fontSize },
+                { fontSize, lineHeight: fontSize * 1.25 },
                 isMinimal ? { color: "#1a1a1a" } : { color: "rgba(255,255,255,0.95)" }
               ]}
               className="text-center"
@@ -93,10 +124,20 @@ export const ShareableAffirmationCard = React.forwardRef<View, ShareableAffirmat
             </Text>
             
             {note && (
-              <View style={styles.noteContainer}>
-                <View style={[styles.noteLine, isMinimal && { backgroundColor: "rgba(0,0,0,0.1)" }]} />
+              <View style={[styles.noteContainer, { marginTop: cardHeight * 0.05 }]}>
+                <View 
+                  style={[
+                    styles.noteLine, 
+                    { width: cardWidth * 0.15, marginBottom: cardHeight * 0.03 },
+                    isMinimal && { backgroundColor: "rgba(0,0,0,0.1)" }
+                  ]} 
+                />
                 <Text 
-                  style={[styles.noteText, isMinimal && { color: "rgba(0,0,0,0.5)" }]}
+                  style={[
+                    styles.noteText, 
+                    { fontSize: noteFontSize, lineHeight: noteFontSize * 1.5 },
+                    isMinimal && { color: "rgba(0,0,0,0.5)" }
+                  ]}
                   className="text-center italic px-6"
                 >
                   {note}
@@ -110,19 +151,32 @@ export const ShareableAffirmationCard = React.forwardRef<View, ShareableAffirmat
               <View 
                 style={[
                   styles.moodBadge,
+                  { 
+                    paddingHorizontal: cardWidth * 0.05, 
+                    paddingVertical: cardHeight * 0.015,
+                    marginBottom: cardHeight * 0.03 
+                  },
                   isMinimal ? { borderColor: "rgba(0,0,0,0.1)", backgroundColor: "rgba(0,0,0,0.03)" } : {}
                 ]}
-                className="mb-6 px-5 py-2 rounded-full border border-white/10 bg-white/5 self-center"
+                className="rounded-full border border-white/10 bg-white/5 self-center"
               >
                 <Text 
-                  style={[styles.moodText, isMinimal && { color: "rgba(0,0,0,0.5)" }]}
+                  style={[
+                    styles.moodText, 
+                    { fontSize: moodFontSize, letterSpacing: moodFontSize * 0.4 },
+                    isMinimal && { color: "rgba(0,0,0,0.5)" }
+                  ]}
                 >
                   FELT {mood}
                 </Text>
               </View>
             )}
             <Text 
-              style={[styles.dateText, isMinimal && { color: "rgba(0,0,0,0.3)" }]}
+              style={[
+                styles.dateText, 
+                { fontSize: dateFontSize, letterSpacing: dateFontSize * 0.3 },
+                isMinimal && { color: "rgba(0,0,0,0.3)" }
+              ]}
             >
               {dateStr}
             </Text>
@@ -135,8 +189,6 @@ export const ShareableAffirmationCard = React.forwardRef<View, ShareableAffirmat
 
 const styles = StyleSheet.create({
   container: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     backgroundColor: "#000",
     overflow: "hidden",
   },
@@ -148,16 +200,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 48,
-    paddingTop: 100,
-    paddingBottom: 100,
     justifyContent: "space-between",
   },
   header: {
     alignItems: "center",
   },
   branding: {
-    fontSize: 10,
+    fontFamily: "DM-Sans",
     letterSpacing: 5,
     textTransform: "uppercase",
     color: "rgba(255,255,255,0.4)",
@@ -171,21 +220,15 @@ const styles = StyleSheet.create({
   affirmationText: {
     fontFamily: "Cormorant_700Bold",
     fontStyle: "italic",
-    lineHeight: 60,
   },
   noteContainer: {
-    marginTop: 60,
     alignItems: "center",
   },
   noteLine: {
-    width: 60,
     height: 1,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
-    marginBottom: 24,
   },
   noteText: {
-    fontSize: 18,
-    lineHeight: 28,
     color: "rgba(255,255,255,0.5)",
   },
   footer: {
@@ -193,17 +236,13 @@ const styles = StyleSheet.create({
   },
   moodBadge: {},
   moodText: {
-    fontSize: 10,
-    letterSpacing: 4,
+    fontFamily: "DM-Sans",
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.6)",
     fontWeight: "600",
   },
   dateText: {
-    fontSize: 10,
-    letterSpacing: 3,
+    fontFamily: "DM-Sans",
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.3)",
     textAlign: "center",
   },
 });
