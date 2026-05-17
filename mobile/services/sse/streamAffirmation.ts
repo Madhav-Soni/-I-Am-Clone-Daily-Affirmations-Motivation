@@ -2,10 +2,13 @@ import { API_BASE_URL } from "@/services/api/client";
 import { endpoints } from "@/services/api/endpoints";
 import { secureStorage, storageKeys } from "@/services/storage/secureStorage";
 
+import { EmotionalContext } from "@/services/ai/contextComposer";
+
 export type StreamOptions = {
   category?: string | null;
   mood?: string | null;
   note?: string | null;
+  context?: EmotionalContext;
   signal?: AbortSignal;
 };
 
@@ -28,6 +31,7 @@ export async function* streamAffirmation(options: StreamOptions): AsyncGenerator
       category: options.category || "General",
       mood: options.mood,
       note: options.note,
+      context: options.context,
     }),
     signal: options.signal,
   });

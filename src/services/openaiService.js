@@ -39,6 +39,10 @@ Rules:
 const buildUserPrompt = (category, context) => {
   const parts = [`Generate an affirmation for the category: "${category}".`];
 
+  if (context.timeOfDay) {
+    parts.push(`Time of day: ${context.timeOfDay}. Adapt the tone accordingly (e.g., uplifting for morning, grounding for night).`);
+  }
+
   if (context.currentMood) {
     parts.push(`The user currently feels: ${context.currentMood} (intensity: ${context.moodIntensity || "moderate"}).`);
     if (context.moodNote) {
@@ -46,12 +50,25 @@ const buildUserPrompt = (category, context) => {
     }
   }
 
+  if (context.emotionalTrend && context.emotionalTrend !== "stable") {
+    parts.push(`Recent emotional trend: ${context.emotionalTrend}.`);
+  }
+
   if (context.preferences?.topics?.length) {
     parts.push(`Their core interests include: ${context.preferences.topics.join(", ")}.`);
   }
 
+  if (context.recentThemes?.length) {
+    parts.push(`Themes they have focused on recently: ${context.recentThemes.join(", ")}.`);
+  }
+
   if (context.streakCount > 1) {
     parts.push(`They are on a ${context.streakCount}-day affirmation streak — acknowledge their consistency subtly.`);
+  }
+
+  if (context.avoidRepetition?.length) {
+    parts.push(`DO NOT repeat or closely mimic these recent affirmations:`);
+    context.avoidRepetition.forEach(a => parts.push(`- "${a}"`));
   }
 
   return parts.join("\n");

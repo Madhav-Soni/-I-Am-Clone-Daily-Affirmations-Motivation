@@ -12,7 +12,7 @@ const logger = require("../utils/logger");
  * Enforces tier-based daily generation limits before hitting the AI.
  */
 exports.generateAffirmation = asyncHandler(async (req, res, next) => {
-  const { category = "General", mood, note } = req.body;
+  const { category = "General", mood, note, context } = req.body;
 
   // Enforce daily limit — resets each UTC day
   const limitCheck = await req.user.checkAndIncrementDailyLimit();
@@ -26,7 +26,7 @@ exports.generateAffirmation = asyncHandler(async (req, res, next) => {
   }
 
   // Use provided mood context or fetch the most recent mood log
-  const moodContext = mood ? { mood, note } : await MoodLog.findOne({ userId: req.user._id }).sort({ createdAt: -1 });
+  const moodContext = mood ? { mood, note, ...context } : await MoodLog.findOne({ userId: req.user._id }).sort({ createdAt: -1 });
 
   // Update streak
   await req.user.updateStreak();
@@ -35,11 +35,11 @@ exports.generateAffirmation = asyncHandler(async (req, res, next) => {
 
   try {
     // Stream to client — this function sets headers and writes SSE events
-    const { content, aiMetadata } = await streamAffirmation(req.user, category, moodContext, res);
+    const { content: finalContent, aiMetadata } = await streamAffirmation(req.user, category, moodContext, res);
 
     // Persist to DB after streaming completes (non-blocking from client perspective)
     await Affirmation.create({
-      content,
+      content: finalContent,
       category,
       mood: moodContext?.mood,
       note: moodContext?.note,

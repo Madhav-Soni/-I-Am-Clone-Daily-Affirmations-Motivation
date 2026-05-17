@@ -42,9 +42,13 @@ const sanitizePII = (text) => {
 const buildSafePromptContext = (user, moodLog = null) => {
   return {
     preferences: user.preferences || {},
-    streakCount: user.streakCount || 0,
+    streakCount: moodLog?.streakCount ?? (user.streakCount || 0),
     currentMood: moodLog ? sanitizePII(moodLog.mood) : null,
     moodNote: moodLog ? sanitizePII(moodLog.note) : null,
+    timeOfDay: moodLog?.timeOfDay || "day",
+    emotionalTrend: moodLog?.emotionalTrend || "stable",
+    recentThemes: moodLog?.recentThemes || [],
+    avoidRepetition: moodLog?.avoidRepetition || [],
     // Deliberately omit: email, name, _id, any raw PII
   };
 };
