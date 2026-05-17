@@ -16,6 +16,14 @@ exports.logMood = asyncHandler(async (req, res) => {
     userId: req.user._id,
   });
 
+  // Dynamically analyze the user's emotional phase transition state in real-time
+  const recentLogs = await MoodLog.find({ userId: req.user._id })
+    .sort({ createdAt: -1 })
+    .limit(15)
+    .lean();
+
+  await req.user.classifyAndUpdateEmotionalPhase(recentLogs, mood, intensity, note);
+
   res.status(201).json({
     status: "success",
     message: "Mood logged. Your next affirmation will reflect how you're feeling.",

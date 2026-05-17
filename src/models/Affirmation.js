@@ -40,6 +40,9 @@ const affirmationSchema = new mongoose.Schema(
       promptTokens: Number,
       completionTokens: Number,
       moodContext: String,
+      activePromptRegister: String,
+      activeMetaphorDomain: String,
+      emotionalPhase: String,
     },
   },
   {

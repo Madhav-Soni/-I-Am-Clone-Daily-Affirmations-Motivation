@@ -98,6 +98,61 @@ const userSchema = new mongoose.Schema(
       select: false,
       default: [],
     },
+    activePromptRegister: {
+      type: String,
+      default: "self-compassion",
+    },
+    activeMetaphorDomain: {
+      type: String,
+      default: "breath",
+    },
+    promptRegisterCycle: {
+      type: [String],
+      default: () => [
+        "self-compassion", "gratitude", "identity", "resilience", "permission", 
+        "somatic", "momentum", "values-alignment", "narrative-healing", "expansion", 
+        "emotional-witnessing", "spiritual", "practical-grounding", "recovery", "future-self"
+      ],
+    },
+    metaphorDomainCycle: {
+      type: [String],
+      default: () => [
+        "nature", "breath", "seasons", "architecture", "ocean", 
+        "movement", "light", "craftsmanship", "music", "grounding"
+      ],
+    },
+    registerRotationAt: {
+      type: Date,
+      default: () => new Date(),
+    },
+    semanticMemory: {
+      recentRegisters: { type: [String], default: [] },
+      recentMetaphorDomains: { type: [String], default: [] },
+      recentCadences: { type: [String], default: [] },
+      recentEmotionalArcs: { type: [String], default: [] },
+    },
+    emotionalPhase: {
+      type: String,
+      enum: ["crisis", "stabilization", "recovery", "emergence", "growth", "plateau", "regression-risk", "resilience-building"],
+      default: "resilience-building",
+    },
+    previousPhase: {
+      type: String,
+      enum: ["crisis", "stabilization", "recovery", "emergence", "growth", "plateau", "regression-risk", "resilience-building"],
+      default: "resilience-building",
+    },
+    phaseTransitionFlag: {
+      type: Boolean,
+      default: false,
+    },
+    phaseTransitionAt: {
+      type: Date,
+      default: () => new Date(),
+    },
+    phaseConfidence: {
+      type: Number,
+      default: 1.0,
+    },
   },
   {
     timestamps: true,
@@ -284,6 +339,304 @@ userSchema.methods.updateStreak = async function () {
     streakCount: this.streakCount,
     lifetimeRitualCount: this.lifetimeRitualCount,
     compassionRecovery,
+  };
+};
+
+/**
+ * Rotates the active emotional framing register and metaphor domain based on 
+ * longitudinal trajectories, reflection depth, active streak states, or scheduled cycle times.
+ */
+userSchema.methods.rotatePromptEntropy = async function (recentMoodLogs, currentMood, moodNote) {
+  const now = new Date();
+  
+  const positiveMoods = ["Happy", "Excited", "Calm", "Hopeful", "Grateful"];
+  const negativeMoods = ["Sad", "Anxious", "Tired", "Frustrated", "Overwhelmed"];
+  
+  const scores = (recentMoodLogs || []).map(log => {
+    if (positiveMoods.includes(log.mood)) return 1;
+    if (negativeMoods.includes(log.mood)) return -1;
+    return 0;
+  });
+  
+  const anxietyLogsCount = (recentMoodLogs || []).filter(log => ["Anxious", "Overwhelmed"].includes(log.mood)).length;
+  
+  let trend = "stable";
+  if (anxietyLogsCount >= 3) {
+    trend = "persistently anxious";
+  } else if (scores.length >= 2) {
+    const reversedScores = [...scores].reverse();
+    let isImproving = true;
+    let isDeclining = true;
+    for (let i = 1; i < reversedScores.length; i++) {
+      if (reversedScores[i] < reversedScores[i - 1]) isImproving = false;
+      if (reversedScores[i] > reversedScores[i - 1]) isDeclining = false;
+    }
+    if (isImproving && reversedScores[reversedScores.length - 1] > reversedScores[0]) trend = "improving";
+    else if (isDeclining && reversedScores[reversedScores.length - 1] < reversedScores[0]) trend = "declining";
+  }
+
+  let selectedRegister = this.activePromptRegister || "self-compassion";
+  let selectedMetaphor = this.activeMetaphorDomain || "breath";
+  let reason = "cycle";
+
+  // 1. Burnout / Persistent Anxiety Rule
+  if (trend === "persistently anxious" || ["ANXIOUS", "OVERWHELMED"].includes((currentMood || "").toUpperCase())) {
+    selectedRegister = "permission";
+    selectedMetaphor = "breath";
+    reason = "burnout_rule";
+  }
+  // 2. Difficult Emotional Period Rule (Declining trajectory or Sad/Tired mood)
+  else if (trend === "declining" || ["SAD", "TIRED"].includes((currentMood || "").toUpperCase())) {
+    selectedRegister = "recovery";
+    selectedMetaphor = "ocean";
+    reason = "recovery_rule";
+  }
+  // 3. High Journaling Depth Rule (note length >= 100 characters)
+  else if (moodNote && moodNote.trim().length >= 100) {
+    selectedRegister = "identity";
+    selectedMetaphor = "craftsmanship";
+    reason = "journaling_rule";
+  }
+  // 4. High Consistency Streak Rule (streak count >= 5)
+  else if ((this.streakCount || 0) >= 5) {
+    selectedRegister = "expansion";
+    selectedMetaphor = "movement";
+    reason = "streak_rule";
+  }
+  // 5. Standard Cycle Rotation (weekly calendar rotation or unit cycles)
+  else {
+    const timeDiff = now.getTime() - (this.registerRotationAt || new Date(0)).getTime();
+    const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
+    
+    if (daysDiff >= 7 || !this.activePromptRegister) {
+      const registersPool = (this.promptRegisterCycle || []).filter(
+        reg => !(this.semanticMemory?.recentRegisters || []).includes(reg)
+      );
+      
+      const metaphorsPool = (this.metaphorDomainCycle || []).filter(
+        met => !(this.semanticMemory?.recentMetaphorDomains || []).includes(met)
+      );
+
+      if (registersPool.length > 0) {
+        const idx = Math.floor(Math.random() * registersPool.length);
+        selectedRegister = registersPool[idx];
+      } else {
+        const idx = Math.floor(Math.random() * (this.promptRegisterCycle || []).length);
+        selectedRegister = this.promptRegisterCycle[idx];
+      }
+
+      if (metaphorsPool.length > 0) {
+        const idx = Math.floor(Math.random() * metaphorsPool.length);
+        selectedMetaphor = metaphorsPool[idx];
+      } else {
+        const idx = Math.floor(Math.random() * (this.metaphorDomainCycle || []).length);
+        selectedMetaphor = this.metaphorDomainCycle[idx];
+      }
+      
+      this.registerRotationAt = now;
+      reason = "scheduled_rotation";
+    }
+  }
+
+  // Update memory state
+  this.activePromptRegister = selectedRegister;
+  this.activeMetaphorDomain = selectedMetaphor;
+
+  if (!this.semanticMemory) {
+    this.semanticMemory = { recentRegisters: [], recentMetaphorDomains: [], recentCadences: [], recentEmotionalArcs: [] };
+  }
+  
+  let recRegs = [...(this.semanticMemory.recentRegisters || [])];
+  if (!recRegs.includes(selectedRegister)) {
+    recRegs.unshift(selectedRegister);
+    if (recRegs.length > 5) recRegs.pop();
+    this.semanticMemory.recentRegisters = recRegs;
+  }
+
+  let recMets = [...(this.semanticMemory.recentMetaphorDomains || [])];
+  if (!recMets.includes(selectedMetaphor)) {
+    recMets.unshift(selectedMetaphor);
+    if (recMets.length > 5) recMets.pop();
+    this.semanticMemory.recentMetaphorDomains = recMets;
+  }
+
+  // Persist directly to DB to keep clean alignment
+  await this.constructor.updateOne(
+    { _id: this._id },
+    {
+      $set: {
+        activePromptRegister: this.activePromptRegister,
+        activeMetaphorDomain: this.activeMetaphorDomain,
+        registerRotationAt: this.registerRotationAt || now,
+        semanticMemory: this.semanticMemory,
+      }
+    }
+  );
+
+  return { register: selectedRegister, metaphor: selectedMetaphor, reason };
+};
+
+/**
+ * Deterministically classifies the user's emotional phase based on mood histories, note length, and streaks.
+ */
+userSchema.methods.classifyAndUpdateEmotionalPhase = async function (recentMoodLogs, currentMood, currentIntensity, currentNote) {
+  const now = new Date();
+  
+  // 1. Fetch recent mood logs if not provided
+  let logs = recentMoodLogs;
+  if (!logs || logs.length === 0) {
+    logs = await this.model("MoodLog").find({ userId: this._id })
+      .sort({ createdAt: -1 })
+      .limit(15)
+      .lean();
+  }
+
+  // 2. Parse active variables
+  const activeMood = currentMood || (logs[0] ? logs[0].mood : null);
+  const activeIntensity = currentIntensity !== undefined ? currentIntensity : (logs[0] ? logs[0].intensity : 5);
+  const activeNote = currentNote !== undefined ? currentNote : (logs[0] ? logs[0].note : "");
+
+  // 3. Establish categorized groupings
+  const positiveMoods = ["Happy", "Excited", "Calm", "Hopeful", "Grateful"];
+  const negativeMoods = ["Sad", "Anxious", "Tired", "Frustrated", "Overwhelmed"];
+  const crisisMoods = ["Anxious", "Overwhelmed", "Sad", "Frustrated"];
+
+  const n = logs.length;
+  let computedPhase = null;
+  let confidence = 1.0;
+
+  // Perform classification over rich history
+  if (n >= 3) {
+    // A. Crisis Classification
+    const recent5 = logs.slice(0, 5);
+    const crisisCount = recent5.filter(l => crisisMoods.includes(l.mood)).length;
+    const avgIntensity = recent5.reduce((sum, l) => sum + (l.intensity || 5), 0) / (recent5.length || 1);
+
+    const activeMoodIsCrisis = activeMood && crisisMoods.includes(activeMood);
+    
+    if ((activeMoodIsCrisis && activeIntensity >= 7) || (crisisCount >= 4 && avgIntensity >= 6.5)) {
+      computedPhase = "crisis";
+      confidence = 0.90;
+    }
+    // B. Regression Risk Classification (Sustained positive/neutral baseline followed by sudden negative crash)
+    else if (
+      ["growth", "stabilization", "emergence", "resilience-building"].includes(this.emotionalPhase || "resilience-building") &&
+      activeMood && negativeMoods.includes(activeMood) && activeIntensity >= 7 &&
+      n >= 4
+    ) {
+      // Look at preceding 3 logs before the current check-in
+      const precedingLogs = logs.slice(1, 4);
+      const precedingPositiveOrNeutral = precedingLogs.filter(l => positiveMoods.includes(l.mood) || l.mood === "Tired").length;
+      if (precedingPositiveOrNeutral >= 2) {
+        computedPhase = "regression-risk";
+        confidence = 0.85;
+      }
+    }
+    // C. Emergence Classification (Sustained negative baseline followed by pivot to consecutive positive logs)
+    else if (n >= 5) {
+      // Newest 3 logs must be positive
+      const newest3 = logs.slice(0, 3);
+      const allNewest3Positive = newest3.length >= 3 && newest3.every(l => positiveMoods.includes(l.mood));
+      
+      // Older baseline (preceding logs) must contain significant difficulty (at least 2 negative/crisis logs)
+      const olderLogs = logs.slice(3, 8);
+      const olderNegCount = olderLogs.filter(l => negativeMoods.includes(l.mood)).length;
+
+      if (allNewest3Positive && olderNegCount >= 2) {
+        computedPhase = "emergence";
+        confidence = 0.95;
+      }
+    }
+
+    // D. Growth, Stabilization, Plateau, Recovery Classification (evaluated when no candidate active phase matches)
+    if (!computedPhase) {
+      const recent8 = logs.slice(0, 8);
+      const posCount = recent8.filter(l => positiveMoods.includes(l.mood)).length;
+      
+      if (posCount >= 6 && activeMood && positiveMoods.includes(activeMood) && (this.streakCount || 0) >= 4) {
+        computedPhase = "growth";
+        confidence = 0.90;
+      }
+      // E. Stabilization Classification (Crisis logs in history transitioning to Calm/low-intensity Tired baseline)
+      else {
+        const olderLogsForStabilization = logs.slice(3, 8);
+        const olderCrisisCount = olderLogsForStabilization.filter(l => crisisMoods.includes(l.mood)).length;
+        
+        const newest3ForStabilization = logs.slice(0, 3);
+        const newestAllCalmOrTired = newest3ForStabilization.every(l => ["Calm", "Tired", "Hopeful"].includes(l.mood) && (l.intensity || 5) <= 5);
+
+        if (olderCrisisCount >= 2 && newestAllCalmOrTired) {
+          computedPhase = "stabilization";
+          confidence = 0.80;
+        }
+        // F. Plateau Classification (Prolonged flatlining, repetitive neutral logs with short journal text)
+        else {
+          const recent7 = logs.slice(0, 7);
+          const repetitiveCalmOrTired = recent7.every(l => ["Calm", "Tired"].includes(l.mood) && (l.intensity || 5) <= 5);
+          
+          const noteLengths = recent7.map(l => (l.note || "").trim().length);
+          const avgNoteLength = noteLengths.reduce((sum, len) => sum + len, 0) / (noteLengths.length || 1);
+
+          if (repetitiveCalmOrTired && avgNoteLength <= 15 && recent7.length >= 5) {
+            computedPhase = "plateau";
+            confidence = 0.75;
+          }
+          // G. Recovery Classification (Post-burnout/crisis recovery with focus on gentle self-care)
+          else {
+            const olderCrisisLogs = logs.slice(4, 9);
+            const olderCrisisCountForRecovery = olderCrisisLogs.filter(l => crisisMoods.includes(l.mood)).length;
+            const newest3ForRecovery = logs.slice(0, 3);
+            const containsTiredOrCalm = newest3ForRecovery.some(l => ["Tired", "Calm"].includes(l.mood));
+            
+            if (olderCrisisCountForRecovery >= 2 && containsTiredOrCalm) {
+              computedPhase = "recovery";
+              confidence = 0.80;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Fallback to existing phase or default to resilience-building
+  if (!computedPhase) {
+    computedPhase = this.emotionalPhase || "resilience-building";
+  }
+
+  // 4. Update the state machine transition flags
+  let isTransitioned = false;
+  if (computedPhase !== this.emotionalPhase) {
+    this.previousPhase = this.emotionalPhase || "resilience-building";
+    this.emotionalPhase = computedPhase;
+    this.phaseTransitionFlag = true;
+    this.phaseTransitionAt = now;
+    this.phaseConfidence = confidence;
+    isTransitioned = true;
+  } else {
+    this.phaseTransitionFlag = false;
+    this.phaseConfidence = confidence;
+  }
+
+  // 5. Commit atomically to DB to prevent dirty-write conflicts
+  await this.constructor.updateOne(
+    { _id: this._id },
+    {
+      $set: {
+        emotionalPhase: this.emotionalPhase,
+        previousPhase: this.previousPhase,
+        phaseTransitionFlag: this.phaseTransitionFlag,
+        phaseTransitionAt: this.phaseTransitionAt || now,
+        phaseConfidence: this.phaseConfidence,
+      }
+    }
+  );
+
+  return {
+    emotionalPhase: this.emotionalPhase,
+    previousPhase: this.previousPhase,
+    phaseTransitionFlag: this.phaseTransitionFlag,
+    phaseConfidence: this.phaseConfidence,
+    isTransitioned,
   };
 };
 

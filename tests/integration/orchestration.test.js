@@ -1,3 +1,4 @@
+process.env.RATE_LIMIT_MAX_REQUESTS = "10000";
 const request = require("supertest");
 const mongoose = require("mongoose");
 const app = require("../../src/app");
@@ -296,6 +297,258 @@ describe("Wellness App Integration & Orchestration Suite", () => {
       expect(genRes.status).toBe(200);
       // Verify our dynamic OpenAI mock resolved the Anxious styling prompt constraint!
       expect(genRes.body.data.affirmation.content).toContain("MOCK_ANXIOUS:");
+    });
+  });
+
+  // 6) Prompt Entropy & Long-Term Semantic Diversity (120-Session Simulation)
+  describe("6. Prompt Entropy & Long-Term Semantic Diversity (120-Session Simulation)", () => {
+    it("should statefully cycle registers/metaphors over 120 sessions, apply trajectory overrides, and store semantic memory", async () => {
+      // Step A: Register & Onboard a new dedicated test user
+      const userCredentials = {
+        email: "entropy_simulation@test.com",
+        password: "StrongPassword123!",
+        name: "Entropy Explorer",
+      };
+
+      const { body: regBody } = await request(app)
+        .post("/api/v1/auth/register")
+        .set("x-device-id", deviceA)
+        .send(userCredentials);
+      const token = regBody.data.accessToken;
+
+      await request(app)
+        .post("/api/v1/auth/onboarding")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          preferences: { topics: ["Confidence", "Career"], dailyFrequency: 10, affirmationVoice: "gentle" }
+        });
+
+      // Upgrade to Premium tier and configure a high limit to allow 120 simulated runs safely
+      process.env.PREMIUM_TIER_DAILY_LIMIT = "1000";
+      await User.updateOne({ email: userCredentials.email }, { $set: { tier: "premium" } });
+
+      const seenRegisters = [];
+      const seenMetaphors = [];
+      let burnoutRuleTriggeredCount = 0;
+      let journalingRuleTriggeredCount = 0;
+      let streakRuleTriggeredCount = 0;
+
+      for (let i = 1; i <= 120; i++) {
+        if (i % 20 === 10 || i % 20 === 11 || i % 20 === 12) {
+          // Log consecutive Anxious moods to trigger persistent anxiety / burnout rule
+          await request(app)
+            .post("/api/v1/mood")
+            .set("Authorization", `Bearer ${token}`)
+            .send({ mood: "Anxious", note: "Feeling highly overwhelmed and completely anxious." });
+        } else if (i % 20 === 15) {
+          // Log a deeply reflective note (length >= 100) to trigger journaling depth rule
+          await request(app)
+            .post("/api/v1/mood")
+            .set("Authorization", `Bearer ${token}`)
+            .send({ 
+              mood: "Calm", 
+              note: "Today I sat quietly by the window and reflected on how much progress I have made over the last six months. It is amazing how small changes compound into beautiful outcomes." 
+            });
+        } else {
+          // Log a standard Calm check-in to keep baseline clean and allow active register cycling
+          await request(app)
+            .post("/api/v1/mood")
+            .set("Authorization", `Bearer ${token}`)
+            .send({ mood: "Calm", note: "A calm ambient moment." });
+        }
+
+        // Simulating Streak counts via direct model updates
+        if (i % 20 === 18) {
+          await User.updateOne({ email: userCredentials.email }, { $set: { streakCount: 8 } });
+        } else if (i % 20 === 19) {
+          await User.updateOne({ email: userCredentials.email }, { $set: { streakCount: 0 } });
+        }
+
+        // Standard Cycle simulation: manually step back registerRotationAt to trigger standard rotations
+        if (i % 15 === 0) {
+          const tenDaysAgo = new Date();
+          tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+          await User.updateOne({ email: userCredentials.email }, { $set: { registerRotationAt: tenDaysAgo } });
+        }
+
+        // Generate affirmation
+        const genRes = await request(app)
+          .post("/api/v1/ai/generate")
+          .set("Authorization", `Bearer ${token}`)
+          .set("x-device-id", deviceA)
+          .send({ category: "Confidence" });
+
+        expect(genRes.status).toBe(200);
+        const { affirmation } = genRes.body.data;
+        const reg = affirmation.aiMetadata.activePromptRegister;
+        const met = affirmation.aiMetadata.activeMetaphorDomain;
+
+        seenRegisters.push(reg);
+        seenMetaphors.push(met);
+
+        if (reg === "permission" && met === "breath") {
+          burnoutRuleTriggeredCount++;
+        }
+        if (reg === "identity" && met === "craftsmanship") {
+          journalingRuleTriggeredCount++;
+        }
+        if (reg === "expansion" && met === "movement") {
+          streakRuleTriggeredCount++;
+        }
+      }
+
+      // Assertions
+      console.log(`[ENTROPY INTEGRATION SIMULATION] Processed 120 sessions successfully!`);
+      console.log(`Unique active registers: ${[...new Set(seenRegisters)].join(", ")}`);
+      console.log(`Unique active metaphors: ${[...new Set(seenMetaphors)].join(", ")}`);
+      console.log(`Rules triggered -> Burnout: ${burnoutRuleTriggeredCount}, Journaling: ${journalingRuleTriggeredCount}, Streak: ${streakRuleTriggeredCount}`);
+
+      // 1. High framing & metaphor diversity check: at least 5 unique registers & 5 unique metaphors must have active roles
+      expect(new Set(seenRegisters).size).toBeGreaterThanOrEqual(5);
+      expect(new Set(seenMetaphors).size).toBeGreaterThanOrEqual(5);
+
+      // 2. Trajectory overrides check: rules must have fired successfully when conditions were met
+      expect(burnoutRuleTriggeredCount).toBeGreaterThan(0);
+      expect(journalingRuleTriggeredCount).toBeGreaterThan(0);
+      expect(streakRuleTriggeredCount).toBeGreaterThan(0);
+
+      // 3. Database state and longitudinal semantic memory validation
+      const finalUser = await User.findOne({ email: userCredentials.email });
+      expect(finalUser.semanticMemory).toBeDefined();
+      expect(finalUser.semanticMemory.recentRegisters.length).toBeGreaterThanOrEqual(2);
+      expect(finalUser.semanticMemory.recentMetaphorDomains.length).toBeGreaterThanOrEqual(2);
+      
+      // Semantic memory should not exceed sliding history limit of 5
+      expect(finalUser.semanticMemory.recentRegisters.length).toBeLessThanOrEqual(5);
+      expect(finalUser.semanticMemory.recentMetaphorDomains.length).toBeLessThanOrEqual(5);
+    });
+
+    it("should statefully track and transition user emotional phases over a longitudinal journey, adjust system prompts dynamically, and reflect phases in hydration", async () => {
+      const email = `phasejourney_${Date.now()}@example.com`;
+      const password = "Password123!";
+      const deviceId = `device_phase_${Date.now()}`;
+
+      // 1. Register User
+      const regRes = await request(app)
+        .post("/api/v1/auth/register")
+        .set("x-device-id", deviceId)
+        .send({ email, password });
+      expect(regRes.status).toBe(201);
+      const token = regRes.body.data.accessToken;
+
+      // Complete Onboarding
+      await request(app)
+        .post("/api/v1/auth/onboarding")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          preferences: { topics: ["Confidence"], dailyFrequency: 5, affirmationVoice: "gentle" }
+        });
+
+      // Upgrade to Premium to allow unlimited generation
+      await User.updateOne({ email }, { $set: { tier: "premium", streakCount: 5 } });
+
+      // --- PHASE 1: CRISIS ---
+      // Log 6 consecutive high-intensity Anxious/Overwhelmed logs to trigger Crisis
+      for (let i = 0; i < 6; i++) {
+        const moodRes = await request(app)
+          .post("/api/v1/mood")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ mood: "Anxious", intensity: 8, note: "Struggling heavily today, so overwhelmed." });
+        expect(moodRes.status).toBe(201);
+      }
+
+      // Generate affirmation and verify it classifies as crisis
+      const genCrisis = await request(app)
+        .post("/api/v1/ai/generate")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ category: "Confidence" });
+      expect(genCrisis.status).toBe(200);
+      expect(genCrisis.body.data.affirmation.aiMetadata.emotionalPhase).toBe("crisis");
+
+      // Verify that today's session hydration payload returns crisis
+      const sessionCrisis = await request(app)
+        .get("/api/v1/session/today?localHour=10")
+        .set("Authorization", `Bearer ${token}`);
+      expect(sessionCrisis.status).toBe(200);
+      expect(sessionCrisis.body.data.emotionalPhase).toBe("crisis");
+
+      // --- PHASE 2: STABILIZATION / RECOVERY ---
+      // Log 4 low-intensity Tired check-ins to transition out of crisis into stabilization/recovery
+      for (let i = 0; i < 4; i++) {
+        await request(app)
+          .post("/api/v1/mood")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ mood: "Tired", intensity: 3, note: "Feeling exhausted but steady, slowing down." });
+      }
+
+      const genStabilization = await request(app)
+        .post("/api/v1/ai/generate")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ category: "Confidence" });
+      expect(genStabilization.status).toBe(200);
+      expect(["stabilization", "recovery"]).toContain(genStabilization.body.data.affirmation.aiMetadata.emotionalPhase);
+
+      // --- PHASE 3: EMERGENCE ---
+      // Sudden positive turnaround: Log 3 consecutive high-vibe Hopeful/Happy logs
+      for (let i = 0; i < 3; i++) {
+        await request(app)
+          .post("/api/v1/mood")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ mood: "Hopeful", intensity: 7, note: "I feel a turn in my perspective today. Things are emerging." });
+      }
+
+      const genEmergence = await request(app)
+        .post("/api/v1/ai/generate")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ category: "Confidence" });
+      expect(genEmergence.status).toBe(200);
+      expect(genEmergence.body.data.affirmation.aiMetadata.emotionalPhase).toBe("emergence");
+
+      // --- PHASE 4: GROWTH ---
+      // Log 10 positive check-ins and check growth
+      for (let i = 0; i < 10; i++) {
+        await request(app)
+          .post("/api/v1/mood")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ mood: "Happy", intensity: 8, note: "Excelling and growing fast." });
+      }
+
+      const genGrowth = await request(app)
+        .post("/api/v1/ai/generate")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ category: "Confidence" });
+      expect(genGrowth.status).toBe(200);
+      expect(genGrowth.body.data.affirmation.aiMetadata.emotionalPhase).toBe("growth");
+
+      // --- PHASE 5: PLATEAU ---
+      // Log 10 short neutral Calm logs to plateau
+      for (let i = 0; i < 10; i++) {
+        await request(app)
+          .post("/api/v1/mood")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ mood: "Calm", intensity: 4, note: "." });
+      }
+
+      const genPlateau = await request(app)
+        .post("/api/v1/ai/generate")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ category: "Confidence" });
+      expect(genPlateau.status).toBe(200);
+      expect(genPlateau.body.data.affirmation.aiMetadata.emotionalPhase).toBe("plateau");
+
+      // --- PHASE 6: REGRESSION RISK ---
+      // After plateau/growth stability, experience a sudden high-intensity Sad event
+      await request(app)
+        .post("/api/v1/mood")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ mood: "Sad", intensity: 8, note: "Suddenly hit a major wall, feeling completely dropped today." });
+
+      const genRegression = await request(app)
+        .post("/api/v1/ai/generate")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ category: "Confidence" });
+      expect(genRegression.status).toBe(200);
+      expect(genRegression.body.data.affirmation.aiMetadata.emotionalPhase).toBe("regression-risk");
     });
   });
 });

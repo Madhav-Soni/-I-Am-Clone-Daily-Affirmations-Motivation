@@ -121,5 +121,11 @@ exports.getTodaySessionState = async (user, localHour) => {
     timeOfDayTone,
     reflectionCallback,
     suggestedEmotionalDirection,
+    activePromptRegister: user.activePromptRegister || "self-compassion",
+    activeMetaphorDomain: user.activeMetaphorDomain || "breath",
+    emotionalPhase: user.emotionalPhase || "resilience-building",
+    previousPhase: user.previousPhase || "resilience-building",
+    phaseTransitionFlag: user.phaseTransitionFlag || false,
+    phaseConfidence: user.phaseConfidence || 1.0,
   };
 };
