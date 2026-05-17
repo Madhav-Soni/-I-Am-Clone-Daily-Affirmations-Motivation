@@ -61,4 +61,16 @@ export const affirmationsApi = {
   deleteAffirmation: async (id: string) => {
     return apiClient.delete<void>(endpoints.affirmations.detail(id));
   },
+
+  generateAffirmation: async (params: {
+    category: string;
+    mood?: string | null;
+    note?: string | null;
+    context?: any;
+  }) => {
+    return apiClient.post<{ status: string; data: { affirmation: AffirmationResponse } }>(
+      endpoints.ai.generate,
+      params
+    );
+  },
 };

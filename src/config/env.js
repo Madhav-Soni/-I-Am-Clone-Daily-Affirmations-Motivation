@@ -1,4 +1,5 @@
 require("dotenv").config();
+const configureCors = require("./cors");
 
 /**
  * Centralized environment configuration with validation.
@@ -62,9 +63,7 @@ const config = {
     rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || parseInt(optionalEnvVars.RATE_LIMIT_MAX_REQUESTS, 10),
   },
   
-  cors: {
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",") || optionalEnvVars.ALLOWED_ORIGINS.split(","),
-  },
+  cors: configureCors(),
 };
 
 module.exports = config;

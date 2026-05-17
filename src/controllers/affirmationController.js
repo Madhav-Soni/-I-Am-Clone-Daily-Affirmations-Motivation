@@ -1,6 +1,6 @@
 const Affirmation = require("../models/Affirmation");
 const MoodLog = require("../models/MoodLog");
-const { streamAffirmation } = require("../services/openaiService");
+const { generateAffirmation } = require("../services/openaiService");
 const { AppError, asyncHandler } = require("../utils/appError");
 const logger = require("../utils/logger");
 
@@ -8,7 +8,7 @@ const logger = require("../utils/logger");
 
 /**
  * POST /api/v1/ai/generate
- * Generates a personalized affirmation via OpenAI and streams it to the client.
+ * Generates a personalized affirmation via OpenAI and returns it to the client.
  * Enforces tier-based daily generation limits before hitting the AI.
  */
 exports.generateAffirmation = asyncHandler(async (req, res, next) => {
@@ -34,12 +34,10 @@ exports.generateAffirmation = asyncHandler(async (req, res, next) => {
   logger.info(`Generating affirmation | user: ${req.user._id} | category: ${category} | count: ${limitCheck.current}/${limitCheck.limit}`);
 
   try {
-    // Stream to client — this function sets headers and writes SSE events
-    const { content: finalContent, aiMetadata } = await streamAffirmation(req.user, category, moodContext, res);
+    const { content, aiMetadata } = await generateAffirmation(req.user, category, moodContext);
 
-    // Persist to DB after streaming completes (non-blocking from client perspective)
-    await Affirmation.create({
-      content: finalContent,
+    const affirmation = await Affirmation.create({
+      content,
       category,
       mood: moodContext?.mood,
       note: moodContext?.note,
@@ -47,12 +45,16 @@ exports.generateAffirmation = asyncHandler(async (req, res, next) => {
       userId: req.user._id,
       aiMetadata,
     });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        affirmation,
+      },
+    });
   } catch (err) {
-    // If headers already sent (streaming started), we can't send an error response
-    if (!res.headersSent) {
-      return next(new AppError("Failed to generate affirmation. Please try again.", 500));
-    }
-    logger.error(`Stream error after headers sent: ${err.message}`);
+    logger.error(`Generation error: ${err.message}`);
+    return next(new AppError("Failed to generate affirmation. Please try again.", 500));
   }
 });
 

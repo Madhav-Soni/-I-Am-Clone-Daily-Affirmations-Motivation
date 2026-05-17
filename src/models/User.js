@@ -122,34 +122,84 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 /**
- * Check if the user has exceeded their daily generation limit.
- * Resets the counter if a new UTC day has started.
+ * Static method to check and increment daily limit atomically.
  */
-userSchema.methods.checkAndIncrementDailyLimit = async function () {
+userSchema.statics.checkAndIncrementDailyLimit = async function (userId, tier) {
   const now = new Date();
-  const resetAt = new Date(this.dailyGenerationResetAt);
-  const isNewDay =
-    now.getUTCFullYear() !== resetAt.getUTCFullYear() ||
-    now.getUTCMonth() !== resetAt.getUTCMonth() ||
-    now.getUTCDate() !== resetAt.getUTCDate();
-
-  if (isNewDay) {
-    this.dailyGenerationCount = 0;
-    this.dailyGenerationResetAt = now;
-  }
 
   const limit =
-    this.tier === "premium"
+    tier === "premium"
       ? parseInt(process.env.PREMIUM_TIER_DAILY_LIMIT, 10) || 50
       : parseInt(process.env.FREE_TIER_DAILY_LIMIT, 10) || 5;
 
-  if (this.dailyGenerationCount >= limit) {
-    return { allowed: false, limit, current: this.dailyGenerationCount };
+  // Calculate the midnight boundary of the current UTC day
+  const utcTodayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+  // Step 1: Try to atomically reset the daily limit count to 1 (counting this request)
+  // IF the reset timestamp is before today's UTC midnight.
+  let user = await this.findOneAndUpdate(
+    {
+      _id: userId,
+      dailyGenerationResetAt: { $lt: utcTodayMidnight },
+    },
+    {
+      $set: {
+        dailyGenerationCount: 1,
+        dailyGenerationResetAt: now,
+        lastActiveAt: now,
+      },
+    },
+    { new: true }
+  );
+
+  if (user) {
+    return { allowed: true, limit, current: 1 };
   }
 
-  this.dailyGenerationCount += 1;
-  await this.save();
-  return { allowed: true, limit, current: this.dailyGenerationCount };
+  // Step 2: If we are in the same day, try to atomically increment by 1
+  // ONLY if the count is strictly less than the daily limit.
+  user = await this.findOneAndUpdate(
+    {
+      _id: userId,
+      dailyGenerationCount: { $lt: limit },
+    },
+    {
+      $inc: { dailyGenerationCount: 1 },
+      $set: { lastActiveAt: now },
+    },
+    { new: true }
+  );
+
+  if (user) {
+    return { allowed: true, limit, current: user.dailyGenerationCount };
+  }
+
+  // Step 3: If both failed, the user is in the same day and has exceeded the limit.
+  // Fetch the current count to return deterministic details.
+  const currentUser = await this.findById(userId).select("dailyGenerationCount");
+  return {
+    allowed: false,
+    limit,
+    current: currentUser ? currentUser.dailyGenerationCount : limit,
+  };
+};
+
+/**
+ * Check if the user has exceeded their daily generation limit.
+ * Delegates to the atomic static method to eliminate race conditions.
+ */
+userSchema.methods.checkAndIncrementDailyLimit = async function () {
+  const result = await this.constructor.checkAndIncrementDailyLimit(this._id, this.tier);
+
+  // Sync current document instance properties with the updated database values
+  if (result.allowed) {
+    this.dailyGenerationCount = result.current;
+    if (result.current === 1) {
+      this.dailyGenerationResetAt = new Date();
+    }
+  }
+
+  return result;
 };
 
 /**

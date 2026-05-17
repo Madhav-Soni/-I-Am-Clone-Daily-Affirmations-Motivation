@@ -5,6 +5,7 @@ const logger = require("../utils/logger");
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   baseURL: process.env.OPENAI_BASE_URL || undefined,
+  timeout: 15000, // Enforce a 15-second request timeout globally
 });
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -78,64 +79,6 @@ const buildUserPrompt = (category, context) => {
 // ─── Service Functions ────────────────────────────────────────────────────────
 
 /**
- * Generates an affirmation and streams the response back via SSE.
- * @param {object} user - Mongoose User document
- * @param {string} category - Affirmation category
- * @param {object|null} latestMood - Most recent MoodLog document
- * @param {object} res - Express response object for streaming
- * @returns {object} - Final affirmation text and usage metadata
- */
-const streamAffirmation = async (user, category, latestMood, res) => {
-  const context = buildSafePromptContext(user, latestMood);
-  const systemPrompt = buildSystemPrompt(user.preferences?.affirmationVoice || "gentle");
-  const userPrompt = buildUserPrompt(category, context);
-
-  logger.debug(`Generating affirmation | user: ${user._id} | category: ${category}`);
-
-  // Set SSE headers
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no"); // Disable Nginx buffering
-
-  const stream = openai.beta.chat.completions.stream({
-    model: MODEL,
-    max_tokens: 200,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-  });
-
-  let fullContent = "";
-
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content || "";
-    if (delta) {
-      fullContent += delta;
-      res.write(`data: ${JSON.stringify({ type: "delta", content: delta })}\n\n`);
-    }
-  }
-
-  const finalMessage = await stream.finalMessage();
-  const usage = finalMessage.usage;
-
-  // Signal completion to the client
-  res.write(`data: ${JSON.stringify({ type: "done", content: fullContent })}\n\n`);
-  res.end();
-
-  return {
-    content: fullContent,
-    aiMetadata: {
-      model: MODEL,
-      promptTokens: usage?.prompt_tokens,
-      completionTokens: usage?.completion_tokens,
-      moodContext: latestMood?.mood || null,
-    },
-  };
-};
-
-/**
  * Non-streaming generation — for internal use (e.g., scheduled jobs).
  */
 const generateAffirmation = async (user, category, latestMood = null) => {
@@ -166,4 +109,4 @@ const generateAffirmation = async (user, category, latestMood = null) => {
   };
 };
 
-module.exports = { streamAffirmation, generateAffirmation };
+module.exports = { generateAffirmation };

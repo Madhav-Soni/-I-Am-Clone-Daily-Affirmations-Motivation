@@ -4,6 +4,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 
+const config = require("./config/env");
 const routes = require("./routes");
 const errorHandler = require("./middleware/errorHandler");
 const { AppError } = require("./utils/appError");
@@ -15,14 +16,7 @@ const app = express();
 
 app.use(helmet());
 
-app.use(
-  cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:3000"],
-    credentials: true,
-    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+app.use(cors(config.cors));
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
 
