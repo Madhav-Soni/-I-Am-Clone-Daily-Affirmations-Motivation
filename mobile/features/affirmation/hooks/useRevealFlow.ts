@@ -99,10 +99,15 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
       safeSetPhase("revealing");
       safeSetStatus("streaming");
 
-      // Synthesize emotional context
+      // Normalize mood: ensure it is always a string and fallback to "Calm"
+      const normalizedMood = typeof mood === "string"
+        ? mood
+        : (mood as any)?.label || "Calm";
+
+      // Synthesize emotional context using normalizedMood string
       const history = affirmationsData?.affirmations || [];
       const context = contextComposer.compose(
-        mood || "Neutral",
+        normalizedMood,
         note || "",
         1, // Default streak for now
         [], // Mood history
@@ -115,8 +120,8 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
         const response = await affirmationsApi.generateAffirmation(
           {
             category: options.category ?? "General",
-            mood,
-            note,
+            mood: normalizedMood,
+            note: note || "",
             context,
           },
           { signal }
@@ -256,7 +261,9 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
 function sleep(ms: number, signal?: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
     if (signal?.aborted) {
-      return reject(new DOMException("Aborted", "AbortError"));
+      const error = new Error("Aborted");
+      error.name = "AbortError";
+      return reject(error);
     }
 
     const timer = setTimeout(() => {
@@ -266,7 +273,9 @@ function sleep(ms: number, signal?: AbortSignal) {
 
     function onAbort() {
       clearTimeout(timer);
-      reject(new DOMException("Aborted", "AbortError"));
+      const error = new Error("Aborted");
+      error.name = "AbortError";
+      reject(error);
     }
 
     signal?.addEventListener("abort", onAbort);
