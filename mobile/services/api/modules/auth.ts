@@ -40,13 +40,13 @@ export const authApi = {
   register: (body: { email: string; password?: string; name: string }) => {
     return apiClient.post<AuthApiResponse>(endpoints.auth.register, {
       ...body,
-      password: body.password || "defaultpassword123", // secure fallback password for demo shell
+      password: body.password || "DefaultPass123", // secure fallback password for demo shell
     });
   },
   login: (body: { email: string; password?: string }) => {
     return apiClient.post<AuthApiResponse>(endpoints.auth.login, {
       ...body,
-      password: body.password || "defaultpassword123",
+      password: body.password || "DefaultPass123",
     });
   },
   logout: () => {
