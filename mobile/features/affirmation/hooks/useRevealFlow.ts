@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState, AppStateStatus } from "react-native";
+import { useNavigation } from "expo-router";
 import { REVEAL_TIMING } from "@/features/affirmation/constants/reveal";
 import { affirmationsApi } from "@/services/api/modules/affirmations";
 import { getFallbackAffirmation } from "@/features/affirmation/constants/fallbacks";
 import { useCheckInDraftStore } from "@/features/mood/store/checkInDraftStore";
 import { hapticLight, hapticSuccess } from "@/shared/lib/haptics";
-import { useGenerationStore } from "@/store";
+import { useGenerationStore, GenerationStatus } from "@/store";
 import { contextComposer } from "@/services/ai/contextComposer";
 import { useAffirmations } from "@/features/library/hooks/useAffirmations";
 import { useUserStats } from "@/features/profile/hooks/useUserStats";
@@ -28,6 +30,8 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
   const note = useCheckInDraftStore((s) => s.note);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastHapticRef = useRef(0);
+  const runIdRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   const setStatus = useGenerationStore((s) => s.setStatus);
   const setPartialText = useGenerationStore((s) => s.setPartialText);
@@ -38,29 +42,62 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
   const { data: affirmationsData } = useAffirmations();
   const { data: userStats, refetch: refetchStats } = useUserStats();
   const queryClient = useQueryClient();
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const cancel = useCallback(() => {
+    runIdRef.current++;
+    abortControllerRef.current?.abort();
+    if (isMountedRef.current) {
+      setStatus("cancelled");
+      reset();
+    }
+  }, [reset, setStatus]);
 
   const runFlow = useCallback(async () => {
+    const runId = ++runIdRef.current;
+    
     // Abort any existing request
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
 
     const signal = abortControllerRef.current.signal;
 
-    setCategory(options.category ?? "General");
-    setPartialText("");
-    setStatus("connecting");
-    setPhase("anticipation");
+    const isCurrent = () => isMountedRef.current && runId === runIdRef.current && !signal.aborted;
+
+    const safeSetPhase = (p: RevealPhase) => {
+      if (isCurrent()) setPhase(p);
+    };
+    const safeSetStatus = (s: GenerationStatus) => {
+      if (isCurrent()) setStatus(s);
+    };
+    const safeSetPartialText = (t: string) => {
+      if (isCurrent()) setPartialText(t);
+    };
+
+    safeSetStatus("connecting");
+    if (isCurrent()) {
+      setCategory(options.category ?? "General");
+      setPartialText("");
+    }
+    safeSetPhase("anticipation");
 
     try {
       await sleep(REVEAL_TIMING.anticipationMs, signal);
-      if (signal.aborted) return;
+      if (!isCurrent()) return;
 
-      setPhase("thinking");
+      safeSetPhase("thinking");
       await sleep(REVEAL_TIMING.thinkingMs, signal);
-      if (signal.aborted) return;
+      if (!isCurrent()) return;
 
-      setPhase("revealing");
-      setStatus("streaming");
+      safeSetPhase("revealing");
+      safeSetStatus("streaming");
 
       // Synthesize emotional context
       const history = affirmationsData?.affirmations || [];
@@ -74,40 +111,47 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
 
       let fullText = "";
       try {
-        const response = await affirmationsApi.generateAffirmation({
-          category: options.category ?? "General",
-          mood,
-          note,
-          context,
-        });
+        if (!isCurrent()) return;
+        const response = await affirmationsApi.generateAffirmation(
+          {
+            category: options.category ?? "General",
+            mood,
+            note,
+            context,
+          },
+          { signal }
+        );
 
         if (response?.data?.affirmation?.content) {
           fullText = response.data.affirmation.content;
         } else {
           throw new Error("Invalid response schema");
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
         console.error("[useRevealFlow API generation failed]", err);
-        fullText = getFallbackAffirmation(options.category);
+        fullText = getFallbackAffirmation(options.category, mood);
       }
 
-      if (signal.aborted) return;
+      if (!isCurrent()) return;
 
       // Run the local organic typewriter animation
       let partial = "";
       lastHapticRef.current = 0;
 
       for (let i = 0; i < fullText.length; i++) {
-        if (signal.aborted) return;
+        if (!isCurrent()) return;
 
         const char = fullText[i];
         partial += char;
-        setPartialText(partial);
+        safeSetPartialText(partial);
 
         // Haptic feedback pulse
         if (partial.length - lastHapticRef.current >= 14) {
           lastHapticRef.current = partial.length;
-          void hapticLight();
+          if (isCurrent()) {
+            void hapticLight();
+          }
         }
 
         // Punctuation pauses for rich organic feel
@@ -121,34 +165,43 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
         await sleep(delay, signal);
       }
 
-      setStatus("complete");
-      setPhase("reflection");
-      void hapticSuccess();
+      if (!isCurrent()) return;
+
+      safeSetStatus("complete");
+      safeSetPhase("reflection");
+      if (isCurrent()) {
+        void hapticSuccess();
+      }
 
       // Refetch user stats to get the updated streak and lifetime count
-      await queryClient.invalidateQueries({ queryKey: ["user", "stats"] });
-      await refetchStats();
+      if (isCurrent()) {
+        await queryClient.invalidateQueries({ queryKey: ["user", "stats"] });
+        await refetchStats();
+      }
 
       await sleep(REVEAL_TIMING.reflectionMs, signal);
-      if (signal.aborted) return;
+      if (!isCurrent()) return;
 
-      setPhase("actions");
+      safeSetPhase("actions");
       await sleep(REVEAL_TIMING.streakDelayMs, signal);
-      if (signal.aborted) return;
+      if (!isCurrent()) return;
 
-      setPhase("streak");
+      safeSetPhase("streak");
     } catch (error: any) {
       if (error.name === "AbortError") return;
+      if (!isCurrent()) return;
       console.error("[useRevealFlow] Unhandled fatal error:", error);
       
-      setStatus("complete");
-      setPhase("reflection");
-      void hapticSuccess();
+      safeSetStatus("complete");
+      safeSetPhase("reflection");
+      if (isCurrent()) {
+        void hapticSuccess();
+      }
       
       try {
-        await sleep(REVEAL_TIMING.reflectionMs, abortControllerRef.current?.signal);
-        if (abortControllerRef.current?.signal.aborted) return;
-        setPhase("actions");
+        await sleep(REVEAL_TIMING.reflectionMs, signal);
+        if (!isCurrent()) return;
+        safeSetPhase("actions");
       } catch (e: any) {
         // Silently catch inner aborts
       }
@@ -162,11 +215,25 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
     };
   }, [runFlow]);
 
-  const cancel = useCallback(() => {
-    abortControllerRef.current?.abort();
-    setStatus("cancelled");
-    reset();
-  }, [reset, setStatus]);
+  // Listen for navigation blur event (user navigates away)
+  useEffect(() => {
+    const unsubscribeBlur = navigation.addListener("blur", () => {
+      cancel();
+    });
+    return unsubscribeBlur;
+  }, [navigation, cancel]);
+
+  // Listen for app going into the background state
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState: AppStateStatus) => {
+      if (nextAppState === "background" || nextAppState === "inactive") {
+        cancel();
+      }
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, [cancel]);
 
   const isStreaming = phase === "revealing";
   const isComplete = phase === "reflection" || phase === "actions" || phase === "streak";

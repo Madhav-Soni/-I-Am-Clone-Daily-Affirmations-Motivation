@@ -36,7 +36,6 @@ export function useBootstrap() {
       } finally {
         useAuthStore.getState().setHydrated(true);
         setIsReady(true);
-        await SplashScreen.hideAsync();
       }
     };
 

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const { getLocalDateString, getStartOfLocalDay } = require("../utils/timezoneHelper");
 
 const userSchema = new mongoose.Schema(
   {
@@ -80,10 +81,22 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: () => new Date(),
     },
-
+    timezone: {
+      type: String,
+      default: "UTC",
+    },
     refreshToken: {
       type: String,
       select: false,
+    },
+    refreshSessions: {
+      type: [{
+        token: { type: String, required: true },
+        deviceId: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now },
+      }],
+      select: false,
+      default: [],
     },
   },
   {
@@ -122,7 +135,7 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 /**
- * Static method to check and increment daily limit atomically.
+ * Static method to check and increment daily limit atomically relative to user-local calendar midnight.
  */
 userSchema.statics.checkAndIncrementDailyLimit = async function (userId, tier) {
   const now = new Date();
@@ -132,15 +145,20 @@ userSchema.statics.checkAndIncrementDailyLimit = async function (userId, tier) {
       ? parseInt(process.env.PREMIUM_TIER_DAILY_LIMIT, 10) || 50
       : parseInt(process.env.FREE_TIER_DAILY_LIMIT, 10) || 5;
 
-  // Calculate the midnight boundary of the current UTC day
-  const utcTodayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  // Retrieve user timezone and reset timestamp first to calculate the local day boundaries
+  const userDoc = await this.findById(userId).select("timezone dailyGenerationResetAt").lean();
+  const timezone = userDoc?.timezone || "UTC";
+
+  // Calculate the local calendar day and start-of-day boundary
+  const localTodayStr = getLocalDateString(now, timezone);
+  const localTodayMidnight = getStartOfLocalDay(localTodayStr, timezone);
 
   // Step 1: Try to atomically reset the daily limit count to 1 (counting this request)
-  // IF the reset timestamp is before today's UTC midnight.
+  // IF the reset timestamp is before today's local midnight boundary.
   let user = await this.findOneAndUpdate(
     {
       _id: userId,
-      dailyGenerationResetAt: { $lt: utcTodayMidnight },
+      dailyGenerationResetAt: { $lt: localTodayMidnight },
     },
     {
       $set: {
@@ -156,7 +174,7 @@ userSchema.statics.checkAndIncrementDailyLimit = async function (userId, tier) {
     return { allowed: true, limit, current: 1 };
   }
 
-  // Step 2: If we are in the same day, try to atomically increment by 1
+  // Step 2: If we are in the same local calendar day, try to atomically increment by 1
   // ONLY if the count is strictly less than the daily limit.
   user = await this.findOneAndUpdate(
     {
@@ -203,33 +221,64 @@ userSchema.methods.checkAndIncrementDailyLimit = async function () {
 };
 
 /**
- * Update streak: increment if active yesterday, reset if a day was missed.
+ * Update streak: increment if active yesterday, reset if a day was missed relative to local calendar day.
  * Tracks lifetime ritual counts and returns whether a compassion recovery was triggered.
  */
 userSchema.methods.updateStreak = async function () {
   const now = new Date();
-  const last = new Date(this.lastActiveAt);
-  const diffDays = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+  const timezone = this.timezone || "UTC";
 
-  // Always increment lifetime count for a new session
-  // If diffDays === 0, it means multiple sessions in same day. We don't increment streak,
-  // but do we increment lifetime? Let's say lifetime is also once per day to align with streaks.
-  if (diffDays > 0 || this.lifetimeRitualCount === 0) {
-    this.lifetimeRitualCount += 1;
-  }
+  const todayStr = getLocalDateString(now, timezone);
+  const lastActiveStr = getLocalDateString(this.lastActiveAt || new Date(0), timezone);
 
   let compassionRecovery = false;
 
-  if (diffDays === 1) {
-    this.streakCount += 1;
-  } else if (diffDays > 1) {
-    this.streakCount = 1;
-    compassionRecovery = true;
+  if (todayStr === lastActiveStr) {
+    // Already did the ritual today in their timezone. Save the timestamp but do not alter streak values.
+    this.lastActiveAt = now;
+    await this.constructor.updateOne(
+      { _id: this._id },
+      { $set: { lastActiveAt: now } }
+    );
+    return {
+      streakCount: this.streakCount,
+      lifetimeRitualCount: this.lifetimeRitualCount,
+      compassionRecovery,
+    };
   }
-  // diffDays === 0: same day, no change to streak
+
+  const todayMidnight = getStartOfLocalDay(todayStr, timezone);
+  const lastActiveMidnight = getStartOfLocalDay(lastActiveStr, timezone);
+
+  // Calculate strict calendar day differences
+  const diffMs = todayMidnight.getTime() - lastActiveMidnight.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  // Increment cumulative lifetime ritual since it's a new calendar day
+  this.lifetimeRitualCount += 1;
+
+  if (diffDays === 1) {
+    // Consecutive local day
+    this.streakCount += 1;
+  } else {
+    // Missed a day: reset active streak to 1 and trigger gentle compassion recovery if they had past rituals
+    this.streakCount = 1;
+    if (this.lifetimeRitualCount > 1) {
+      compassionRecovery = true;
+    }
+  }
 
   this.lastActiveAt = now;
-  await this.save();
+  await this.constructor.updateOne(
+    { _id: this._id },
+    {
+      $set: {
+        streakCount: this.streakCount,
+        lifetimeRitualCount: this.lifetimeRitualCount,
+        lastActiveAt: now,
+      }
+    }
+  );
 
   return {
     streakCount: this.streakCount,

@@ -42,10 +42,51 @@ export const FALLBACK_AFFIRMATIONS: Record<string, string[]> = {
   ],
 };
 
+export const MOOD_AWARE_FALLBACKS: Record<string, string[]> = {
+  Anxious: [
+    "I release my worries to the earth; in this moment, I am safe and held.",
+    "My breath is steady, my mind is grounding, and I am anchored in the quiet present.",
+    "I do not need to figure everything out right now. I am safe in this quiet space."
+  ],
+  Tired: [
+    "I give myself permission to rest fully; I have done enough today.",
+    "My worth is not tied to my productivity. I honor my body's need for gentle recovery.",
+    "I soften, I release, and I embrace the quiet sanctuary of deep rest."
+  ],
+  Sad: [
+    "It is okay to feel sad. I hold space for myself with exceptional tenderness.",
+    "I honor my tears; they are a gentle washing away of the heavy clouds.",
+    "Even in the dark, my inner light remains steady, warm, and secure."
+  ],
+  Frustrated: [
+    "I breathe out the tension, step into my center, and reclaim my quiet focus.",
+    "I cannot control external chaos, but I can protect my internal peace.",
+    "I anchor myself in my boundaries, cool, composed, and clear."
+  ],
+  Excited: [
+    "I amplify this positive energy and let it fuel my joyful alignment.",
+    "My horizon is open, my tide is rising, and I step forward with radiant anticipation.",
+    "I celebrate this beautiful spark of joy and let it expand throughout my day."
+  ],
+  Happy: [
+    "I am in radiant alignment with my joy, and my heart is open to the sun.",
+    "Abundance flows effortlessly, and I bask in the warmth of this gratitude.",
+    "I cherish this light, carry it gently, and share its shine ambiently."
+  ],
+};
+
 /**
  * Returns a premium fallback affirmation, ensuring the user is never left without a beautiful message.
  */
-export function getFallbackAffirmation(category?: string | null): string {
+export function getFallbackAffirmation(category?: string | null, mood?: string | null): string {
+  // 1. Try mood-aware fallback first if mood matches a defined profile
+  if (mood && MOOD_AWARE_FALLBACKS[mood]) {
+    const options = MOOD_AWARE_FALLBACKS[mood];
+    const randomIndex = Math.floor(Math.random() * options.length);
+    return options[randomIndex];
+  }
+
+  // 2. Fall back to category-aware selection
   const safeCategory = category && FALLBACK_AFFIRMATIONS[category] ? category : "General";
   const options = FALLBACK_AFFIRMATIONS[safeCategory] || FALLBACK_AFFIRMATIONS.General;
   

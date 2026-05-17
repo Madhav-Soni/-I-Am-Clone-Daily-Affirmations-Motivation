@@ -28,4 +28,5 @@ export const storageKeys = {
   accessToken: "iamwell.accessToken",
   refreshToken: "iamwell.refreshToken",
   onboarded: "iamwell.onboarded",
+  deviceId: "iamwell.deviceId",
 } as const;

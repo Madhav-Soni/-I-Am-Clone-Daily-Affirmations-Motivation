@@ -35,6 +35,12 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 
   // 4) Attach user and proceed
+  const clientTimezone = req.headers["x-timezone"];
+  if (clientTimezone && user.timezone !== clientTimezone) {
+    user.timezone = clientTimezone;
+    await user.save({ validateBeforeSave: false });
+  }
+
   req.user = user;
   next();
 });
@@ -54,11 +60,11 @@ const requirePremium = (req, res, next) => {
  * Generates a short-lived access token and a long-lived refresh token.
  */
 const generateTokens = (userId) => {
-  const accessToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+  const accessToken = jwt.sign({ id: userId, salt: Math.random() }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   });
 
-  const refreshToken = jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET, {
+  const refreshToken = jwt.sign({ id: userId, salt: Math.random() }, process.env.JWT_REFRESH_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "30d",
   });
 

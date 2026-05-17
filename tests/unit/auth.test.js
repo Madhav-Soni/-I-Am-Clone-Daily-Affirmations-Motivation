@@ -1,7 +1,7 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
-const app = require("../src/app");
-const User = require("../src/models/User");
+const app = require("../../src/app");
+const User = require("../../src/models/User");
 
 // Use an in-memory or test DB URI
 beforeAll(async () => {

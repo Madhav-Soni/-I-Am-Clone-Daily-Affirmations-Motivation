@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import * as SplashScreen from "expo-splash-screen";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
@@ -9,6 +11,10 @@ function TabIcon({ name, color }: { name: IconName; color: string }) {
 }
 
 export default function AppTabsLayout() {
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
   return (
     <Tabs
       screenOptions={{

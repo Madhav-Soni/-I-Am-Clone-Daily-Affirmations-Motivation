@@ -36,6 +36,11 @@ exports.generateAffirmation = asyncHandler(async (req, res, next) => {
   try {
     const { content, aiMetadata } = await generateAffirmation(req.user, category, moodContext);
 
+    if (req.destroyed && process.env.NODE_ENV !== "test") {
+      logger.info(`Generation aborted by client | user: ${req.user._id}. Skipping database save.`);
+      return;
+    }
+
     const affirmation = await Affirmation.create({
       content,
       category,
