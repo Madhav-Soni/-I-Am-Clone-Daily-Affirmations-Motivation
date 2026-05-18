@@ -17,6 +17,13 @@ export type AffirmationResponse = {
   note?: string;
   isFavorite: boolean;
   createdAt: string;
+  aiMetadata?: {
+    model?: string;
+    moodContext?: string;
+    activePromptRegister?: string;
+    activeMetaphorDomain?: string;
+    emotionalPhase?: string;
+  };
 };
 
 export type AffirmationsListResponse = {

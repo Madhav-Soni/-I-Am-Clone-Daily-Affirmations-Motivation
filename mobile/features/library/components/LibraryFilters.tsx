@@ -1,9 +1,7 @@
 import React from "react";
-import { ScrollView, Pressable, View } from "react-native";
+import { ScrollView, Pressable, View, StyleSheet } from "react-native";
 import { Text } from "@/shared/components/primitives/Text";
 import { colors } from "@/theme/tokens";
-
-type FilterType = "all" | "category" | "mood";
 
 type LibraryFiltersProps = {
   selectedCategory?: string;
@@ -22,8 +20,16 @@ export function LibraryFilters({
   onSelectMood,
 }: LibraryFiltersProps) {
   return (
-    <View className="mb-6">
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3 px-4">
+    <View style={styles.container}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Category</Text>
+      </View>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        style={styles.scrollView}
+      >
         <FilterChip
           label="All Categories"
           active={!selectedCategory}
@@ -39,7 +45,15 @@ export function LibraryFilters({
         ))}
       </ScrollView>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4">
+      <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+        <Text style={styles.sectionTitle}>Mood</Text>
+      </View>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        style={styles.scrollView}
+      >
         <FilterChip
           label="All Moods"
           active={!selectedMood}
@@ -62,13 +76,70 @@ function FilterChip({ label, active, onPress }: { label: string; active: boolean
   return (
     <Pressable
       onPress={onPress}
-      className={`mr-3 px-4 py-2 rounded-full border ${
-        active ? "bg-brand-500 border-brand-400" : "bg-white/5 border-white/10"
-      }`}
+      style={[
+        styles.chip,
+        active ? styles.chipActive : styles.chipInactive
+      ]}
     >
-      <Text className={`text-xs font-medium ${active ? "text-white" : "text-white/60"}`}>
+      <Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>
         {label}
       </Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: 8,
+    width: "100%",
+  },
+  sectionHeader: {
+    paddingHorizontal: 24,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 10,
+    fontFamily: "DM-Sans",
+    letterSpacing: 3,
+    textTransform: "uppercase",
+    color: "rgba(255, 255, 255, 0.4)",
+    fontWeight: "600",
+  },
+  scrollView: {
+    width: "100%",
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingRight: 32, // Extra padding to allow scrolling past final chip cleanly
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  chipInactive: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  chipActive: {
+    backgroundColor: colors.brand[500] || "#0D9488",
+    borderColor: colors.brand[400] || "#14B8A6",
+  },
+  chipText: {
+    fontSize: 12,
+    fontFamily: "DM-Sans",
+    fontWeight: "500",
+  },
+  chipTextInactive: {
+    color: "rgba(255, 255, 255, 0.6)",
+  },
+  chipTextActive: {
+    color: "#ffffff",
+  },
+});

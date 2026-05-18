@@ -44,7 +44,10 @@ export function FullscreenScreen({
       <CinematicBackground preset={gradient} />
       {blobs ? <AmbientBlobBackground blobs={blobConfigs} /> : null}
       <SafeAreaView edges={edges} style={styles.safe}>
-        <View className={cn("flex-1", padded && "px-5", contentClassName, className)}>
+        <View 
+          className={cn("flex-1", padded && "px-5", contentClassName, className)}
+          style={[styles.flex1, padded && styles.padded]}
+        >
           {children}
         </View>
       </SafeAreaView>
@@ -59,5 +62,11 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1,
+  },
+  flex1: {
+    flex: 1,
+  },
+  padded: {
+    paddingHorizontal: 20,
   },
 });

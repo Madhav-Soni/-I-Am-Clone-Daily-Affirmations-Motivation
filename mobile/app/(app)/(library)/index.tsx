@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, FlatList, RefreshControl } from "react-native";
+import { View, FlatList, RefreshControl, StyleSheet, Platform } from "react-native";
 import { FullscreenScreen } from "@/shared/components/primitives/FullscreenScreen";
 import { Text } from "@/shared/components/primitives/Text";
 import { useAffirmations } from "@/features/library/hooks/useAffirmations";
@@ -7,7 +7,6 @@ import { AffirmationCard } from "@/features/library/components/AffirmationCard";
 import { LibraryFilters } from "@/features/library/components/LibraryFilters";
 import { EmptyLibrary } from "@/features/library/components/EmptyLibrary";
 import { colors } from "@/theme/tokens";
-
 import { router } from "expo-router";
 
 export default function LibraryScreen() {
@@ -35,7 +34,7 @@ export default function LibraryScreen() {
         data={affirmations}
         keyExtractor={(item) => item._id}
         renderItem={({ item, index }) => (
-          <View className="px-6">
+          <View style={styles.cardContainer}>
             <AffirmationCard
               affirmation={item}
               index={index}
@@ -43,13 +42,17 @@ export default function LibraryScreen() {
             />
           </View>
         )}
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === "android"}
         ListHeaderComponent={
-          <View className="pt-16 mb-6">
-            <View className="px-6 mb-8">
-              <Text variant="displayLg" className="text-4xl mb-2 font-serif">
+          <View style={styles.headerContainer}>
+            <View style={styles.headerTextWrapper}>
+              <Text variant="displayLg" style={styles.headerTitle}>
                 Library
               </Text>
-              <Text variant="body" color="muted">
+              <Text variant="body" color="muted" style={styles.headerSubtitle}>
                 Your collection of personal truths.
               </Text>
             </View>
@@ -69,8 +72,35 @@ export default function LibraryScreen() {
             tintColor={colors.brand[500]}
           />
         }
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={styles.flatListContent}
       />
     </FullscreenScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  headerContainer: {
+    paddingTop: Platform.OS === "android" ? 36 : 16, // Proportional safe top spacing for Android status bar compatibility
+    marginBottom: 8,
+  },
+  headerTextWrapper: {
+    paddingHorizontal: 24,
+    marginBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 36,
+    fontFamily: "Cormorant_700Bold",
+    color: "#ffffff",
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.5)",
+  },
+  cardContainer: {
+    paddingHorizontal: 24,
+  },
+  flatListContent: {
+    paddingBottom: 120,
+  },
+});

@@ -9,8 +9,24 @@ const routes = require("./routes");
 const errorHandler = require("./middleware/errorHandler");
 const { AppError } = require("./utils/appError");
 const logger = require("./utils/logger");
+const requestObserver = require("./middleware/requestObserver");
+const mongoose = require("mongoose");
 
 const app = express();
+
+app.use(requestObserver);
+
+// ─── HTTPS Redirection & Proxy Trust ──────────────────────────────────────────
+
+if (process.env.NODE_ENV === "production") {
+  app.enable("trust proxy");
+  app.use((req, res, next) => {
+    if (req.secure || req.headers["x-forwarded-proto"] === "https") {
+      return next();
+    }
+    res.redirect(`https://${req.headers.host}${req.url}`);
+  });
+}
 
 // ─── Security Middleware ──────────────────────────────────────────────────────
 
@@ -58,8 +74,13 @@ if (process.env.NODE_ENV !== "test") {
 // ─── Health Check ─────────────────────────────────────────────────────────────
 
 app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
+  const isDbConnected = mongoose.connection.readyState === 1;
+  const dbStatus = isDbConnected ? "connected" : "disconnected";
+  const statusCode = isDbConnected ? 200 : 503;
+
+  res.status(statusCode).json({
+    status: isDbConnected ? "ok" : "fail",
+    database: dbStatus,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });

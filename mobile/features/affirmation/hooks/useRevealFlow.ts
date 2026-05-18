@@ -18,7 +18,8 @@ export type RevealPhase =
   | "revealing"
   | "reflection"
   | "actions"
-  | "streak";
+  | "streak"
+  | "cooldown";
 
 type UseRevealFlowOptions = {
   category?: string | null;
@@ -134,6 +135,15 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
       } catch (err: any) {
         if (err.name === "AbortError") return;
         console.error("[useRevealFlow API generation failed]", err);
+
+        // Check if this error is specifically due to a 429 rate/daily limit
+        const isDailyLimit = err?.response?.status === 429 || err?.status === 429 || (err?.message && err.message.includes("429"));
+        if (isDailyLimit) {
+          safeSetStatus("complete");
+          safeSetPhase("cooldown");
+          return;
+        }
+
         fullText = getFallbackAffirmation(options.category, mood);
       }
 

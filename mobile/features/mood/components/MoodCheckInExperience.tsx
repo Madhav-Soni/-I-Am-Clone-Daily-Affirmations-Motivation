@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, View, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import Animated from "react-native-reanimated";
 import { useFloat } from "@/animations/hooks";
@@ -11,6 +12,7 @@ import { CHECK_IN_BLOBS, CHECK_IN_COPY } from "@/features/mood/constants/checkIn
 import { useCheckInDraftStore } from "@/features/mood/store/checkInDraftStore";
 import { routes } from "@/constants/routes";
 import { FloatingContinueBar } from "@/shared/components/layout/FloatingContinueBar";
+import { useAuthStore } from "@/store";
 import {
   FullscreenScreen,
   MoodPillGroup,
@@ -19,15 +21,78 @@ import {
 import { hapticMedium } from "@/shared/lib/haptics";
 
 export function MoodCheckInExperience() {
+  const [hasMounted, setHasMounted] = useState(false);
+  const [renderError, setRenderError] = useState<string | null>(null);
+
+  // State Hydration checks
+  const user = useAuthStore((s) => s.user);
   const mood = useCheckInDraftStore((s) => s.mood);
   const setMood = useCheckInDraftStore((s) => s.setMood);
   const promptFloat = useFloat({ amplitude: 6, durationMs: 6000 });
 
+  // 1. Mount Logging & Session Validation
+  useEffect(() => {
+    console.log("[CHECK-IN MOUNT] Screen mounted successfully.");
+    console.log("[CHECK-IN STATE] Current User:", user ? `${user.name} (${user.email})` : "None");
+    console.log("[CHECK-IN STATE] Current Mood Draft:", mood || "None");
+    setHasMounted(true);
+
+    return () => {
+      console.log("[CHECK-IN UNMOUNT] Screen unmounted.");
+    };
+  }, [user, mood]);
+
   const handleContinue = () => {
-    if (!mood) return;
-    void hapticMedium();
-    router.push(routes.app.checkInNote);
+    try {
+      if (!mood) {
+        console.warn("[CHECK-IN WARN] Attempted to continue without selecting mood.");
+        return;
+      }
+      void hapticMedium();
+      console.log("[CHECK-IN ACTION] Continuing to notes with mood:", mood);
+      router.push(routes.app.checkInNote);
+    } catch (err: any) {
+      console.error("[CHECK-IN ERROR] Failed during continue action:", err);
+      setRenderError(err?.message || "Failed to continue check-in.");
+    }
   };
+
+  // 2. Defensive check for rendering issues
+  if (renderError) {
+    return (
+      <FullscreenScreen gradient="ocean" padded={true} contentClassName="justify-center items-center">
+        <Text variant="headline" color="primary" align="center" style={{ marginBottom: 12, color: "#ef4444" }}>
+          Something went wrong
+        </Text>
+        <Text variant="body" color="muted" align="center" style={{ marginBottom: 24 }}>
+          {renderError}
+        </Text>
+        <FloatingContinueBar
+          label="Reset & Go Home"
+          onPress={() => {
+            setRenderError(null);
+            router.replace(routes.app.home);
+          }}
+          visible
+        />
+      </FullscreenScreen>
+    );
+  }
+
+  // 3. Explicit Loading State (until mounted to prevent hydration mismatches)
+  if (!hasMounted) {
+    console.log("[CHECK-IN RENDER] Rendered placeholder loading state.");
+    return (
+      <FullscreenScreen gradient="ocean" padded={false} contentClassName="justify-center items-center">
+        <ActivityIndicator size="large" color="#ffffff" style={{ opacity: 0.6 }} />
+        <Text variant="caption" color="muted" style={{ marginTop: 12 }}>
+          Loading sanctuary...
+        </Text>
+      </FullscreenScreen>
+    );
+  }
+
+  console.log("[CHECK-IN RENDER] Rendered full check-in experience tree.");
 
   return (
     <FullscreenScreen
@@ -42,7 +107,11 @@ export function MoodCheckInExperience() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Animated.View entering={checkInPromptEnter} style={styles.promptBlock}>
+        {/* Main Prompt header Block */}
+        <Animated.View 
+          entering={checkInPromptEnter} 
+          style={[styles.promptBlock, { opacity: 1 }]} // Explicit opacity fallback override
+        >
           <Animated.View style={promptFloat}>
             <Text variant="display" color="primary" style={styles.prompt}>
               {CHECK_IN_COPY.prompt}
@@ -53,10 +122,15 @@ export function MoodCheckInExperience() {
           </Text>
         </Animated.View>
 
-        <Animated.View entering={checkInMoodEnter} style={styles.moodBlock}>
+        {/* Interactive Mood Pills Group */}
+        <Animated.View 
+          entering={checkInMoodEnter} 
+          style={[styles.moodBlock, { opacity: 1 }]} // Explicit opacity fallback override
+        >
           <MoodPillGroup value={mood} onValueChange={setMood} />
         </Animated.View>
 
+        {/* Dynamic Contextual Hint */}
         <View style={styles.hintBlock}>
           <AffirmationHint mood={mood} />
         </View>
@@ -64,6 +138,7 @@ export function MoodCheckInExperience() {
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
+      {/* Floating Call to Action */}
       <FloatingContinueBar
         label={CHECK_IN_COPY.continue}
         onPress={handleContinue}

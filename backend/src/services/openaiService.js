@@ -127,12 +127,12 @@ function extractThematicTag(text = '') {
 // ── Prompt assembly ──────────────────────────────────────────────────────────
 
 function buildPromptContext({ user, latestMood, category }) {
-  // ── 1. Voice (with safety override) ─────────────────────────────────────
+  // ── 1. Voice (with safety override mapping correct schema name) ──────────
   const moodSafety = classifyMoodSafety(latestMood?.mood);
   const effectiveVoiceKey =
     moodSafety === 'force-gentle'
       ? 'gentle'
-      : (user.preferences?.voice || 'gentle');
+      : (user.preferences?.affirmationVoice || 'gentle');
   const voice = VOICE_CONFIGS[effectiveVoiceKey] || VOICE_CONFIGS.gentle;
 
   // ── 2. Register ──────────────────────────────────────────────────────────
@@ -146,6 +146,12 @@ function buildPromptContext({ user, latestMood, category }) {
 
   // ── 5. Category ──────────────────────────────────────────────────────────
   const categoryText = category || 'general wellbeing';
+
+  // ── 5b. Personalization: Onboarding Focus Topics ────────────────────────
+  let topicsContext = '';
+  if (user.preferences?.topics && user.preferences.topics.length > 0) {
+    topicsContext = `\n\nPREFERRED FOCUS THEMES: This user has selected the following focus areas: ${user.preferences.topics.join(', ')}. Keep these personal topics in mind as background themes when styling the affirmation.`;
+  }
 
   // ── 6. Streak milestone (contextual, not congratulatory) ─────────────────
   let streakContext = '';
@@ -250,6 +256,7 @@ function buildPromptContext({ user, latestMood, category }) {
   // ── User prompt ──────────────────────────────────────────────────────────
   const userPrompt =
     `Focus area for this affirmation: ${categoryText}.` +
+    topicsContext +
     streakContext +
     reflectionContext +
     temporalContext +
@@ -378,6 +385,12 @@ async function generateAffirmationStream({ user, latestMood, category, res }) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), GENERATION_TIMEOUT_MS);
 
+  // Propagate client disconnects immediately to the OpenAI API call
+  const clientCloseHandler = () => {
+    controller.abort();
+  };
+  res.on('close', clientCloseHandler);
+
   let fullContent = '';
 
   try {
@@ -443,6 +456,7 @@ async function generateAffirmationStream({ user, latestMood, category, res }) {
     throw err;
   } finally {
     clearTimeout(timeout);
+    res.off('close', clientCloseHandler);
   }
 }
 

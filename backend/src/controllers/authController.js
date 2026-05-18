@@ -1,4 +1,7 @@
 const User = require("../models/User");
+const Affirmation = require("../models/Affirmation");
+const MoodLog = require("../models/MoodLog");
+const { invalidateStats } = require("../utils/statsCache");
 const { AppError, asyncHandler } = require("../utils/appError");
 const { generateTokens } = require("../middleware/auth");
 const jwt = require("jsonwebtoken");
@@ -206,4 +209,29 @@ exports.getMe = asyncHandler(async (req, res) => {
   }
 
   res.status(200).json({ status: "success", data: { user } });
+});
+
+/**
+ * DELETE /api/v1/auth/delete-account
+ * Permanently purges user account and cascades to delete all affirmations and mood logs (Phase 6)
+ */
+exports.deleteAccount = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+
+  // 1. Permanently delete the user document
+  await User.findByIdAndDelete(userId);
+
+  // 2. Cascade and delete all user-related data
+  await Affirmation.deleteMany({ userId });
+  await MoodLog.deleteMany({ userId });
+
+  // 3. Purge cached user statistics
+  invalidateStats(userId);
+
+  logger.warn(`User account permanently deleted: ${userId}`);
+
+  res.status(200).json({
+    status: "success",
+    message: "Your account and all associated data have been permanently deleted.",
+  });
 });

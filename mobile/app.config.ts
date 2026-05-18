@@ -9,7 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: "./assets/images/icon.png",
   scheme: "iamwell",
   userInterfaceStyle: "automatic",
-  newArchEnabled: true,
+  newArchEnabled: false,
   splash: {
     image: "./assets/images/splash-icon.png",
     resizeMode: "contain",
@@ -30,7 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundler: "metro",
     output: "static",
   },
-  plugins: ["expo-router", "expo-font", "expo-secure-store"],
+  plugins: ["expo-router", "expo-font", "expo-secure-store", "expo-notifications"],
   experiments: {
     typedRoutes: true,
   },

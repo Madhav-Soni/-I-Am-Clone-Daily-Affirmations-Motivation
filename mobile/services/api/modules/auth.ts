@@ -4,6 +4,8 @@ import { endpoints } from "../endpoints";
 export type UserPreferences = {
   affirmationVoice?: "gentle" | "motivational" | "spiritual" | "direct";
   focusTopics?: string[];
+  topics?: string[];
+  dailyFrequency?: number;
   ritualReminderTime?: string; // e.g., "08:00"
 };
 
@@ -57,5 +59,8 @@ export const authApi = {
   },
   completeOnboarding: (preferences: UserPreferences) => {
     return apiClient.post<ProfileApiResponse>(endpoints.auth.onboarding, { preferences });
+  },
+  deleteAccount: () => {
+    return apiClient.delete<{ status: string; message: string }>("/auth/delete-account");
   },
 };

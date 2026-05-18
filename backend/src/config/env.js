@@ -16,7 +16,7 @@ const requiredEnvVars = [
 const optionalEnvVars = {
   NODE_ENV: "development",
   PORT: "5000",
-  JWT_EXPIRES_IN: "7d",
+  JWT_EXPIRES_IN: "15m",
   JWT_REFRESH_EXPIRES_IN: "30d",
   OPENAI_MODEL: "gpt-4o-mini",
   FREE_TIER_DAILY_LIMIT: "5",
@@ -33,6 +33,28 @@ if (missingEnvVars.length > 0) {
   throw new Error(
     `Missing required environment variables: ${missingEnvVars.join(", ")}`
   );
+}
+
+// Hard security guards to prevent shipping with unsafe secrets or weak keys in production
+if (process.env.NODE_ENV === "production") {
+  const defaultSecrets = [
+    "your-super-secret-jwt-key-change-this-in-production",
+    "your-super-secret-refresh-key-change-this-in-production",
+  ];
+  const jwtSecret = process.env.JWT_SECRET;
+  const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
+
+  if (defaultSecrets.includes(jwtSecret) || defaultSecrets.includes(jwtRefreshSecret)) {
+    throw new Error(
+      "CRITICAL SECURITY EXCEPTION: Unsafe default JWT secrets cannot be used in a production environment!"
+    );
+  }
+
+  if (jwtSecret.length < 32 || jwtRefreshSecret.length < 32) {
+    throw new Error(
+      "CRITICAL SECURITY EXCEPTION: Production JWT secrets must be at least 32 characters in length for adequate cryptographic entropy!"
+    );
+  }
 }
 
 // Export configuration object

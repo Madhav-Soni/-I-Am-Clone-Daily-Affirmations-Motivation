@@ -17,6 +17,7 @@ import { FullscreenScreen } from "@/shared/components/primitives/FullscreenScree
 import { hapticLight } from "@/shared/lib/haptics";
 import { Text } from "@/shared/components/primitives/Text";
 import { useUserStats } from "@/features/profile/hooks/useUserStats";
+import { Button } from "@/shared/components/primitives/Button";
 
 
 type AffirmationRevealExperienceProps = {
@@ -57,13 +58,50 @@ export function AffirmationRevealExperience({ category }: AffirmationRevealExper
       </View>
 
       <View style={styles.center}>
-        <PhaseContent
-          phase={phase}
-          partialText={partialText}
-          isStreaming={isStreaming}
-          showAffirmation={showAffirmation}
-          showReflection={showReflection}
-        />
+        {phase === "cooldown" ? (
+          <Animated.View entering={FadeIn.duration(800)} style={styles.cooldownContainer}>
+            <View style={styles.cooldownIconWrapper}>
+              <View style={styles.cooldownIconOuter}>
+                <Text style={styles.cooldownIcon}>✦</Text>
+              </View>
+            </View>
+            <Text variant="display" align="center" style={styles.cooldownTitle}>
+              You've completed today's reflection.
+            </Text>
+            <Text variant="body" color="muted" align="center" style={styles.cooldownSubtitle}>
+              Sit with the intentions you have set today. Your sanctuary will open again tomorrow.
+            </Text>
+            
+            <View style={styles.cooldownActions}>
+              <Button
+                onPress={() => {
+                  void hapticLight();
+                  router.push("/(modals)/paywall");
+                }}
+                variant="primary"
+                fullWidth
+              >
+                Upgrade to Premium
+              </Button>
+              <View style={{ height: 12 }} />
+              <Button
+                onPress={handleDismiss}
+                variant="ghost"
+                fullWidth
+              >
+                Close in Stillness
+              </Button>
+            </View>
+          </Animated.View>
+        ) : (
+          <PhaseContent
+            phase={phase}
+            partialText={partialText}
+            isStreaming={isStreaming}
+            showAffirmation={showAffirmation}
+            showReflection={showReflection}
+          />
+        )}
       </View>
 
       <View style={styles.footer}>
@@ -174,5 +212,43 @@ const styles = StyleSheet.create({
   },
   bottomPad: {
     height: 8,
+  },
+  cooldownContainer: {
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  cooldownIconWrapper: {
+    marginBottom: 24,
+  },
+  cooldownIconOuter: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(251, 191, 36, 0.08)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(251, 191, 36, 0.2)",
+  },
+  cooldownIcon: {
+    fontSize: 24,
+    color: "#fbbf24",
+  },
+  cooldownTitle: {
+    fontSize: 28,
+    fontFamily: "Cormorant_700Bold",
+    color: "#ffffff",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  cooldownSubtitle: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: "rgba(255, 255, 255, 0.5)",
+    textAlign: "center",
+    marginBottom: 36,
+  },
+  cooldownActions: {
+    width: "100%",
   },
 });

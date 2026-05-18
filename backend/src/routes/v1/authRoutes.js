@@ -19,5 +19,6 @@ router.use(protect);
 router.post("/logout", authController.logout);
 router.get("/me", authController.getMe);
 router.post("/onboarding", onboardingValidator, authController.completeOnboarding);
+router.delete("/delete-account", authController.deleteAccount);
 
 module.exports = router;
