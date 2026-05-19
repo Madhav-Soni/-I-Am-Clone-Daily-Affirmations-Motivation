@@ -1,7 +1,15 @@
-import React from "react";
-import { ScrollView, Pressable, View, StyleSheet } from "react-native";
+import React, { useEffect } from "react";
+import { Pressable, View, StyleSheet } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withSequence,
+} from "react-native-reanimated";
 import { Text } from "@/shared/components/primitives/Text";
-import { colors } from "@/theme/tokens";
+import { colors, radius } from "@/theme/tokens";
+import { spring } from "@/theme/motion";
 
 type LibraryFiltersProps = {
   selectedCategory?: string;
@@ -24,12 +32,7 @@ export function LibraryFilters({
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Category</Text>
       </View>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        contentContainerStyle={styles.scrollContent}
-        style={styles.scrollView}
-      >
+      <View style={styles.chipsContainer}>
         <FilterChip
           label="All Categories"
           active={!selectedCategory}
@@ -43,17 +46,12 @@ export function LibraryFilters({
             onPress={() => onSelectCategory(cat)}
           />
         ))}
-      </ScrollView>
+      </View>
 
-      <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+      <View style={[styles.sectionHeader, { marginTop: 20 }]}>
         <Text style={styles.sectionTitle}>Mood</Text>
       </View>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        contentContainerStyle={styles.scrollContent}
-        style={styles.scrollView}
-      >
+      <View style={styles.chipsContainer}>
         <FilterChip
           label="All Moods"
           active={!selectedMood}
@@ -67,24 +65,83 @@ export function LibraryFilters({
             onPress={() => onSelectMood(mood)}
           />
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
-function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function FilterChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  // Smooth scale animation on selection change
+  useEffect(() => {
+    if (active) {
+      scale.value = withSequence(
+        withSpring(1.08, spring.snappy),
+        withSpring(1.02, spring.gentle)
+      );
+    } else {
+      scale.value = withSpring(1, spring.gentle);
+    }
+  }, [active, scale]);
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.95, spring.snappy);
+    opacity.value = withSpring(0.9, spring.snappy);
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(active ? 1.02 : 1, spring.gentle);
+    opacity.value = withSpring(1, spring.gentle);
+  };
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+      opacity: opacity.value,
+    };
+  });
+
   return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.chip,
-        active ? styles.chipActive : styles.chipInactive
-      ]}
-    >
-      <Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>
-        {label}
-      </Text>
-    </Pressable>
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[
+          styles.chip,
+          active ? styles.chipActive : styles.chipInactive,
+        ]}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+      >
+        {active && (
+          <LinearGradient
+            colors={["rgba(14, 165, 233, 0.35)", "rgba(2, 132, 199, 0.1)"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: radius.full }]}
+          />
+        )}
+        <Text
+          style={[
+            styles.chipText,
+            active ? styles.chipTextActive : styles.chipTextInactive,
+          ]}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -95,7 +152,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     paddingHorizontal: 24,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 10,
@@ -105,41 +162,47 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.4)",
     fontWeight: "600",
   },
-  scrollView: {
-    width: "100%",
-  },
-  scrollContent: {
+  chipsContainer: {
     paddingHorizontal: 24,
-    paddingRight: 32, // Extra padding to allow scrolling past final chip cleanly
     flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+    gap: 12,
   },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
+    borderRadius: radius.full,
+    borderWidth: 1.5,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 42,
+    overflow: "hidden",
   },
   chipInactive: {
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderColor: "rgba(255, 255, 255, 0.08)",
   },
   chipActive: {
-    backgroundColor: colors.brand[500] || "#0D9488",
-    borderColor: colors.brand[400] || "#14B8A6",
+    backgroundColor: "rgba(14, 165, 233, 0.15)",
+    borderColor: colors.brand[400] || "#38bdf8",
+    shadowColor: colors.brand[500] || "#0ea5e9",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    elevation: 6,
   },
   chipText: {
     fontSize: 12,
     fontFamily: "DM-Sans",
     fontWeight: "500",
+    textAlign: "center",
   },
   chipTextInactive: {
     color: "rgba(255, 255, 255, 0.6)",
   },
   chipTextActive: {
     color: "#ffffff",
+    fontWeight: "600",
   },
 });
