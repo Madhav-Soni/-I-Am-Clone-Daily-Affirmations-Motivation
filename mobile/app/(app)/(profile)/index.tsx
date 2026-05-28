@@ -98,8 +98,6 @@ function AnimatedTopicPill({
         [0, 1],
         ["rgba(255, 255, 255, 0.03)", "rgba(56, 189, 248, 0.15)"]
       ),
-      shadowColor: "#0ea5e9",
-      shadowOffset: { width: 0, height: 4 },
       shadowOpacity: withSpring(selected ? 0.35 : 0, spring.gentle),
       shadowRadius: withSpring(selected ? 8 : 0, spring.gentle),
       borderRadius: 16,
@@ -642,6 +640,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
+    shadowColor: "#0ea5e9",
+    shadowOffset: { width: 0, height: 4 },
   },
   topicChipActive: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",

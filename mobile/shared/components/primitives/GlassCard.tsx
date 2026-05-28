@@ -68,8 +68,6 @@ export function GlassCard({
         [0, 1],
         ["rgba(255, 255, 255, 0.03)", "rgba(14, 165, 233, 0.12)"]
       ),
-      shadowColor: "#0ea5e9",
-      shadowOffset: { width: 0, height: 6 },
       shadowOpacity: withTiming(selected ? 0.6 : 0, { duration: 250 }),
       shadowRadius: withTiming(selected ? 16 : 0, { duration: 250 }),
       elevation: withTiming(selected ? 6 : 0, { duration: 250 }),
@@ -114,6 +112,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: glass.border,
     backgroundColor: glass.background,
+    shadowColor: "#0ea5e9",
+    shadowOffset: { width: 0, height: 6 },
   },
   highlight: {
     ...StyleSheet.absoluteFillObject,

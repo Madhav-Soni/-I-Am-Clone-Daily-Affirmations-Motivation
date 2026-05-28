@@ -83,8 +83,6 @@ function AnimatedTopicPill({
         [0, 1],
         ["rgba(255, 255, 255, 0.05)", "rgba(56, 189, 248, 0.2)"]
       ),
-      shadowColor: "#0ea5e9",
-      shadowOffset: { width: 0, height: 4 },
       shadowOpacity: withSpring(selected ? 0.65 : 0, spring.gentle),
       shadowRadius: withSpring(selected ? 12 : 0, spring.gentle),
       borderRadius: 24,
@@ -195,6 +193,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 24,
+    shadowColor: "#0ea5e9",
+    shadowOffset: { width: 0, height: 4 },
   },
   pillText: {
     fontSize: 15,
