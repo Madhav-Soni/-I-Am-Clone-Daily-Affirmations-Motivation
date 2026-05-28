@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
     fontFamily: "DM-Sans",
   },
   section: {
-    marginTop: 28,
+    marginTop: 36,
   },
   sectionTitle: {
     fontSize: 11,
@@ -788,10 +788,10 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: "rgba(255, 255, 255, 0.05)",
-    marginVertical: 4,
+    marginVertical: 8,
   },
   saveContainer: {
-    marginTop: 8,
-    marginBottom: 48,
+    marginTop: 24,
+    marginBottom: 64,
   },
 });

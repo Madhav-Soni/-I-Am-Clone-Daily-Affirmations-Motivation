@@ -64,7 +64,9 @@ function AnimatedActionCard({
       style={styles.actionCardWrapper}
     >
       <Animated.View style={[styles.actionCard, animatedStyle]}>
-        <Text style={styles.actionEmoji}>{emoji}</Text>
+        <View style={{ height: 28, justifyContent: "center", marginBottom: 2 }}>
+          <Text style={styles.actionEmoji}>{emoji}</Text>
+        </View>
         <Text style={styles.actionTitle}>{title}</Text>
         <Text style={styles.actionSub}>{subtitle}</Text>
       </Animated.View>
@@ -203,17 +205,24 @@ export default function HomeScreen() {
                 backgroundColor: "rgba(12, 14, 28, 0.85)",
                 borderWidth: 1,
                 borderColor: "rgba(255, 255, 255, 0.10)",
+                // Premium subtle glow/shadow setup
+                shadowColor: "#38bdf8",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.08,
+                shadowRadius: 16,
                 elevation: 5,
                 overflow: "visible",
               }}
             >
-              {/* Icon — breathing room from top edge */}
-              <Text style={{
-                fontSize: 30,
-                lineHeight: 36,
-              }}>
-                {item.icon}
-              </Text>
+              {/* Icon — breathing room from top edge + fixed baseline wrapper */}
+              <View style={{ height: 36, justifyContent: "center" }}>
+                <Text style={{
+                  fontSize: 28,
+                  lineHeight: 34,
+                }}>
+                  {item.icon}
+                </Text>
+              </View>
 
               {/* Number + Label — anchored to bottom */}
               <View style={{ width: "100%", paddingLeft: 2 }}>
@@ -223,9 +232,7 @@ export default function HomeScreen() {
                   color: "#FFFFFF",
                   fontFamily: "DMSans_700Bold",
                   letterSpacing: 0.5,
-                  lineHeight: 42,
-                  // DO NOT set includeFontPadding: false on bold numbers
-                  // Android clips left bearing without it
+                  lineHeight: 40,
                 }}>
                   {item.value}
                 </Text>
@@ -235,7 +242,7 @@ export default function HomeScreen() {
                   textTransform: "uppercase",
                   color: "rgba(255, 255, 255, 0.5)",
                   fontFamily: "DMSans_500Medium",
-                  marginTop: 5,
+                  marginTop: 6,
                   includeFontPadding: false,
                 }}>
                   {item.label}
@@ -651,28 +658,30 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.03)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: "rgba(12, 14, 28, 0.65)",
+    borderWidth: 1.2,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 20,
+    padding: 16,
     alignItems: "flex-start",
-    gap: 8,
+    minHeight: 132,
+    justifyContent: "space-between",
   },
   actionEmoji: {
-    fontSize: 22,
+    fontSize: 24,
   },
   actionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
     color: "#ffffff",
-    fontFamily: "DM-Sans",
+    fontFamily: "DMSans_700Bold",
   },
   actionSub: {
     fontSize: 10,
-    color: "rgba(255, 255, 255, 0.35)",
-    fontFamily: "DM-Sans",
-    lineHeight: 12,
+    color: "rgba(255, 255, 255, 0.45)",
+    fontFamily: "DMSans_500Medium",
+    lineHeight: 13,
+    marginTop: 4,
   },
   revisitContainer: {
     marginTop: 8,

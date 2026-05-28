@@ -10,6 +10,9 @@ import {
 import type { GradientPreset } from "@/theme/gradients";
 import { cn } from "@/shared/utils/cn";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Platform } from "react-native";
+
 type FullscreenScreenProps = ViewProps & {
   children: ReactNode;
   className?: string;
@@ -38,19 +41,35 @@ export function FullscreenScreen({
   style,
   ...props
 }: FullscreenScreenProps) {
+  const insets = useSafeAreaInsets();
+  
+  // Guarantee a minimum safe top padding for translucent status bars
+  const paddingTop = edges.includes("top") ? Math.max(insets.top, Platform.OS === "android" ? 38 : 20) : 0;
+  const paddingBottom = edges.includes("bottom") ? insets.bottom : 0;
+
   return (
     <View style={[styles.root, style]} {...props}>
       <StatusBar style={statusBarStyle} />
       <CinematicBackground preset={gradient} />
       {blobs ? <AmbientBlobBackground blobs={blobConfigs} /> : null}
-      <SafeAreaView edges={edges} style={[styles.safe, { zIndex: 10, elevation: 10 }]}>
+      <View 
+        style={[
+          styles.safe, 
+          { 
+            paddingTop, 
+            paddingBottom,
+            zIndex: 10, 
+            elevation: 10 
+          }
+        ]}
+      >
         <View 
           className={cn("flex-1", padded && "px-5", contentClassName, className)}
           style={[styles.flex1, padded && styles.padded]}
         >
           {children}
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

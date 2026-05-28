@@ -138,7 +138,7 @@ export function GlassButton(props: Omit<ButtonProps, "variant">) {
 const styles = StyleSheet.create({
   pressable: {
     borderRadius: radius.full,
-    overflow: "hidden",
+    overflow: "visible", // Enable visible overflow for premium outer glow/shadows
   },
   fullWidth: {
     width: "100%",
@@ -147,22 +147,38 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
+    // Premium soft glow using violet accent color
+    shadowColor: "#c4b5fd",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 18,
+    elevation: 6,
   },
   secondary: {
     borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1.2,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 3,
   },
   glass: {
     borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
     borderWidth: 1,
-    borderColor: colors.surface.glassBorder,
+    borderColor: "rgba(255, 255, 255, 0.06)",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 2,
   },
   ghost: {
     borderRadius: radius.full,
@@ -176,7 +192,8 @@ const styles = StyleSheet.create({
   },
   primaryLabel: {
     color: colors.luxury.void,
-    fontWeight: "600",
+    fontWeight: "700", // Stronger hierarchy for primary label
+    letterSpacing: 0.5,
   },
   disabled: {
     opacity: 0.45,
