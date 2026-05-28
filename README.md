@@ -1,6 +1,8 @@
 # 🌿 I AM WELL — Premium Generative AI Wellness & Ritual Sanctuary
 
 [![CI](https://github.com/Madhav-Soni/iamwell/actions/workflows/ci.yml/badge.svg)](https://github.com/Madhav-Soni/iamwell/actions/workflows/ci.yml)
+[![Demo Video](https://img.shields.io/badge/Demo-Watch%20Video-red?style=flat&logo=youtube)](#)
+[![Download APK](https://img.shields.io/badge/Download-APK%20Release-blue?style=flat&logo=android)](https://github.com/Madhav-Soni/iamwell/releases)
 [![Expo SDK](https://img.shields.io/badge/Expo-SDK%2052-000000?style=flat&logo=expo)](https://expo.dev/)
 [![React Native](https://img.shields.io/badge/React%20Native-0.76-61DAFB?style=flat&logo=react)](https://reactnative.dev/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=flat&logo=node.js)](https://nodejs.org/)
@@ -39,6 +41,22 @@ Your history of saved truths. Filtered instantly by category or mood with a resp
 
 ### 5. Deep Customization & Profile Settings
 Adjust your reminder cadence, edit active focus topics, toggle theme aesthetics, and view your daily practice analytics.
+
+---
+
+## 📱 Interface Gallery
+
+<p align="center">
+  <img src="./assets/screenshots/mockup.png" width="800" alt="I AM WELL 3-Phone Mockup" />
+</p>
+
+| 1. Guided Onboarding | 2. Emotional Check-in | 3. AI Ritual Loading |
+|---|---|---|
+| <img src="./assets/screenshots/1_onboarding.png" width="220" /> | <img src="./assets/screenshots/2_checkin.png" width="220" /> | <img src="./assets/screenshots/3_loading.png" width="220" /> |
+
+| 4. Typewriter Reveal | 5. Saved Intentions Library | 6. User Stats & Streak |
+|---|---|---|
+| <img src="./assets/screenshots/4_reveal.png" width="220" /> | <img src="./assets/screenshots/5_library.png" width="220" /> | <img src="./assets/screenshots/6_profile.png" width="220" /> |
 
 ---
 
