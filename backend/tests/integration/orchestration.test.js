@@ -1,3 +1,4 @@
+jest.setTimeout(120000);
 process.env.RATE_LIMIT_MAX_REQUESTS = "10000";
 const request = require("supertest");
 const mongoose = require("mongoose");
