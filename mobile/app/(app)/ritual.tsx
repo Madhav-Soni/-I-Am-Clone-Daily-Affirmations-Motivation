@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, View, ActivityIndicator, Share, Platform } from "react-native";
+import { StyleSheet, View, Share, Platform } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import Animated, { FadeIn, FadeInUp, FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInUp,
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing
+} from "react-native-reanimated";
 import { FullscreenScreen } from "@/shared/components/primitives/FullscreenScreen";
 import { GlassCard } from "@/shared/components/primitives/GlassCard";
 import { PrimaryButton, SecondaryButton, GhostButton } from "@/shared/components/primitives/Button";
@@ -18,11 +28,36 @@ export default function RitualScreen() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [affirmationText, setAffirmationText] = useState("");
+  const [displayedText, setDisplayedText] = useState("");
+  const [loadingText, setLoadingText] = useState("Analyzing your emotional state...");
   const queryClient = useQueryClient();
+
+  const pulseOpacity = useSharedValue(0.4);
+
+  useEffect(() => {
+    pulseOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.9, { duration: 1000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.4, { duration: 1000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    opacity: pulseOpacity.value,
+  }));
 
   const fetchAffirmation = async () => {
     setLoading(true);
     setSaved(false);
+    setLoadingText("Analyzing your emotional state...");
+    
+    const textTimer = setTimeout(() => {
+      setLoadingText("Crafting your personalized affirmation...");
+    }, 1800);
+
     try {
       const targetUrl = API_BASE_URL.replace("/api/v1", "") + "/api/affirmations/generate";
       const response = await fetch(targetUrl, {
@@ -40,16 +75,38 @@ export default function RitualScreen() {
       console.error("Failed to generate affirmation:", error);
       setAffirmationText("You are growing gently into the person you are meant to become.");
     } finally {
-      // Keep loading for at least 1.2s to make the "Generating your ritual..." state feel premium
+      clearTimeout(textTimer);
+      // Keep loading for at least 3.2s to make the multi-stage load feel premium and fully readable
       setTimeout(() => {
         setLoading(false);
-      }, 1200);
+      }, 3200);
     }
   };
 
   useEffect(() => {
     fetchAffirmation();
   }, [mood, tone]);
+
+  // Typewriter effect logic
+  useEffect(() => {
+    if (!loading && affirmationText) {
+      let currentText = "";
+      let index = 0;
+      setDisplayedText("");
+      
+      const interval = setInterval(() => {
+        if (index < affirmationText.length) {
+          currentText += affirmationText[index];
+          setDisplayedText(currentText);
+          index++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 35); // base organic typewriter reveal speed
+      
+      return () => clearInterval(interval);
+    }
+  }, [loading, affirmationText]);
 
   const handleSave = async () => {
     void hapticSuccess();
@@ -89,11 +146,13 @@ export default function RitualScreen() {
 
   if (loading) {
     return (
-      <FullscreenScreen gradient="aurora" contentClassName="justify-center items-center py-8">
-        <ActivityIndicator size="large" color="#ffffff" style={{ opacity: 0.8 }} />
-        <Text variant="body" color="secondary" style={styles.loadingText}>
-          Generating your ritual...
-        </Text>
+      <FullscreenScreen gradient="aurora" contentClassName="justify-center items-center px-8">
+        <Animated.View style={[{ alignItems: "center", gap: 24 }, pulseStyle]}>
+          <Text style={{ fontSize: 36, color: "#a78bfa" }}>✦</Text>
+          <Text variant="headline" align="center" style={{ color: "#ffffff", letterSpacing: 0.5, lineHeight: 28, fontFamily: "DM-Sans" }}>
+            {loadingText}
+          </Text>
+        </Animated.View>
       </FullscreenScreen>
     );
   }
@@ -119,7 +178,7 @@ export default function RitualScreen() {
           <GlassCard animated={false} padding="lg" intensity={52} style={styles.glowCard}>
             <Text style={styles.quoteMark}>“</Text>
             <Text variant="affirmation" color="primary" align="center" style={styles.affirmation}>
-              {affirmationText}
+              {displayedText}
             </Text>
             <Text style={styles.quoteMarkRight}>”</Text>
             <Text style={styles.footerLabel}>Generated for your evening ritual.</Text>

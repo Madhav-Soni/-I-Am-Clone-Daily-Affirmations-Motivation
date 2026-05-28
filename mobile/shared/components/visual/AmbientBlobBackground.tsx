@@ -17,10 +17,10 @@ export type BlobConfig = {
 };
 
 const DEFAULT_BLOBS: BlobConfig[] = [
-  { color: colors.luxury.accent, size: 280, top: "-8%", left: "-15%", drift: 18 },
-  { color: colors.luxury.teal, size: 220, top: "35%", left: "70%", drift: 14 },
-  { color: colors.luxury.gold, size: 180, top: "72%", left: "10%", drift: 12 },
-  { color: colors.luxury.rose, size: 160, top: "55%", left: "-10%", drift: 16 },
+  { color: colors.luxury.accent, size: 220, top: "-8%", left: "-15%", drift: 18 },
+  { color: colors.luxury.teal, size: 180, top: "35%", left: "70%", drift: 14 },
+  { color: colors.luxury.gold, size: 145, top: "72%", left: "10%", drift: 12 },
+  { color: colors.luxury.rose, size: 130, top: "55%", left: "-10%", drift: 16 },
 ];
 
 type AmbientBlobProps = {
@@ -29,7 +29,7 @@ type AmbientBlobProps = {
 };
 
 function AmbientBlob({ config, index }: AmbientBlobProps) {
-  const opacity = useSharedValue(0.4);
+  const opacity = useSharedValue(0.2);
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);
   const translateX = useSharedValue(0);
@@ -37,7 +37,7 @@ function AmbientBlob({ config, index }: AmbientBlobProps) {
   useEffect(() => {
     const delay = (config.delay ?? index) * 400;
     const start = () => {
-      opacity.value = breatheOpacity(0.25, 0.55);
+      opacity.value = breatheOpacity(0.12, 0.32);
       scale.value = breatheScale(0.94, 1.06);
       translateY.value = driftOffset(config.drift);
       translateX.value = driftOffset(config.drift * 0.6);
@@ -98,5 +98,6 @@ export function AmbientBlobBackground({ blobs = DEFAULT_BLOBS }: AmbientBlobBack
 const styles = StyleSheet.create({
   container: {
     overflow: "hidden",
+    zIndex: -1,
   },
 });

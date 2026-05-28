@@ -43,7 +43,7 @@ export function FullscreenScreen({
       <StatusBar style={statusBarStyle} />
       <CinematicBackground preset={gradient} />
       {blobs ? <AmbientBlobBackground blobs={blobConfigs} /> : null}
-      <SafeAreaView edges={edges} style={styles.safe}>
+      <SafeAreaView edges={edges} style={[styles.safe, { zIndex: 10, elevation: 10 }]}>
         <View 
           className={cn("flex-1", padded && "px-5", contentClassName, className)}
           style={[styles.flex1, padded && styles.padded]}

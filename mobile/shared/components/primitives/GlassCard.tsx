@@ -74,14 +74,60 @@ export function GlassCard({
     };
   });
 
+  const flattenedStyle = StyleSheet.flatten(style) || {};
+  const {
+    width,
+    height,
+    margin,
+    marginTop,
+    marginBottom,
+    marginLeft,
+    marginRight,
+    marginHorizontal,
+    marginVertical,
+    flex,
+    position,
+    top,
+    bottom,
+    left,
+    right,
+    alignSelf,
+    ...nonLayoutStyles
+  } = flattenedStyle;
+
+  const layoutStyle = {
+    width,
+    height,
+    margin,
+    marginTop,
+    marginBottom,
+    marginLeft,
+    marginRight,
+    marginHorizontal,
+    marginVertical,
+    flex,
+    position,
+    top,
+    bottom,
+    left,
+    right,
+    alignSelf,
+  };
+
   const inner = (
     <Animated.View
-      style={[styles.inner, animatedInnerStyle, { padding: paddingMap[padding] }, style]}
+      style={[
+        styles.inner,
+        animatedInnerStyle,
+        { padding: paddingMap[padding] },
+        nonLayoutStyles,
+        (width || height) && { flex: 1, width: "100%", height: "100%" }
+      ]}
       className={className}
       {...props}
     >
       <BlurView
-        intensity={selected ? 70 : intensity}
+        intensity={Platform.OS === "android" ? Math.min(30, selected ? 70 : intensity) : (selected ? 70 : intensity)}
         tint="dark"
         experimentalBlurMethod={Platform.OS === "android" ? "dimezisBlurView" : undefined}
         style={StyleSheet.absoluteFill}
@@ -92,11 +138,11 @@ export function GlassCard({
   );
 
   if (!animated) {
-    return <View style={styles.wrapper}>{inner}</View>;
+    return <View style={[styles.wrapper, layoutStyle]}>{inner}</View>;
   }
 
   return (
-    <Animated.View entering={fadeInUp} style={styles.wrapper}>
+    <Animated.View entering={fadeInUp} style={[styles.wrapper, layoutStyle]}>
       {inner}
     </Animated.View>
   );

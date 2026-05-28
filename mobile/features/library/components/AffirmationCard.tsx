@@ -20,7 +20,7 @@ export function AffirmationCard({ affirmation, onPress, index }: AffirmationCard
   return (
     <Animated.View
       entering={FadeInDown.delay(index * 100).springify()}
-      className="mb-6"
+      className="mb-[18px]"
     >
       <Pressable
         onPress={onPress}
@@ -29,41 +29,28 @@ export function AffirmationCard({ affirmation, onPress, index }: AffirmationCard
           pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
         ]}
       >
-        <View className="flex-row justify-between items-start mb-3">
-          <View className="bg-brand-500/10 px-2 py-1 rounded-full border border-brand-500/20">
-            <Text className="text-[10px] font-medium tracking-wider uppercase text-brand-400">
-              {affirmation.category}
-            </Text>
-          </View>
+        <View style={styles.topRow}>
           {affirmation.mood && (
-            <View className="bg-luxury-accent/10 px-2 py-1 rounded-full border border-luxury-accent/20">
-              <Text className="text-[10px] font-medium tracking-wider uppercase text-luxury-accent">
-                {affirmation.mood}
+            <View style={styles.moodPill}>
+              <Text style={styles.moodPillText}>
+                {affirmation.mood.toUpperCase()}
               </Text>
             </View>
           )}
+          <View style={styles.categoryPill}>
+            <Text style={styles.categoryPillText}>
+              {affirmation.category.toUpperCase()}
+            </Text>
+          </View>
         </View>
 
-        <Text variant="headline" className="mb-4 leading-8 font-serif italic text-white/90">
+        <Text style={styles.content}>
           "{affirmation.content}"
         </Text>
 
-        {affirmation.note ? (
-          <View className="mb-4 border-l-2 border-brand-500/30 pl-3 py-1">
-            <Text variant="body" color="muted" numberOfLines={2} className="italic">
-              {affirmation.note}
-            </Text>
-          </View>
-        ) : null}
-
-        <View className="flex-row justify-between items-center mt-auto pt-4 border-t border-white/5">
-          <Text variant="caption" color="muted">
-            {dateLabel}
-          </Text>
-          <View className="flex-row items-center">
-            {/* Action buttons could go here */}
-          </View>
-        </View>
+        <Text style={styles.date}>
+          {dateLabel}
+        </Text>
       </Pressable>
     </Animated.View>
   );
@@ -73,13 +60,62 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "rgba(255, 255, 255, 0.03)",
     borderRadius: 24,
-    padding: 24,
+    padding: 22,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    shadowColor: "#0ea5e9",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  topRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  moodPill: {
+    backgroundColor: "rgba(139, 92, 246, 0.15)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(139, 92, 246, 0.25)",
+  },
+  moodPillText: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    color: "#a78bfa",
+    fontFamily: "DM-Sans",
+  },
+  categoryPill: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.08)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 5,
+  },
+  categoryPillText: {
+    fontSize: 9,
+    fontWeight: "600",
+    letterSpacing: 1.5,
+    color: "rgba(255, 255, 255, 0.5)",
+    fontFamily: "DM-Sans",
+  },
+  content: {
+    fontSize: 18,
+    fontFamily: "Cormorant_700Bold",
+    fontStyle: "italic",
+    lineHeight: 28,
+    color: "rgba(255, 255, 255, 0.9)",
+    marginBottom: 16,
+  },
+  date: {
+    fontSize: 11,
+    color: "rgba(255, 255, 255, 0.35)",
+    fontFamily: "DM-Sans",
+    letterSpacing: 0.5,
   },
 });

@@ -75,6 +75,7 @@ function AnimatedActionCard({
 export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
   const { data: sessionData, isLoading, refetch, isOffline } = useTodaySession();
+  const [ritualLoading, setRitualLoading] = useState(false);
 
   const formattedTimeOfDay = useMemo(() => {
     if (!sessionData?.timeOfDayTone) return "Good day";
@@ -99,8 +100,6 @@ export default function HomeScreen() {
   const continuityMsg = sessionData?.emotionalContinuityMessage || "Welcome to your personal space.";
   const showRecovery = sessionData?.compassionRecoveryState;
   const isPremium = user?.tier === "premium";
-
-  const [ritualLoading, setRitualLoading] = useState(false);
 
   const handleBeginRitual = () => {
     void hapticLight();
@@ -135,6 +134,7 @@ export default function HomeScreen() {
   return (
     <FullscreenScreen gradient="aurora" padded={false}>
       <ScrollView 
+        style={{ flex: 1, zIndex: 10 }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -172,38 +172,70 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* Personalized Progress Panel */}
-        <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.statsContainer}>
-          <GlassCard padding="md" animated={false} style={styles.statCard}>
-            <Text style={styles.statEmoji}>🔥</Text>
-            <View>
-              <Text style={styles.statValue}>{sessionData?.streakState || 12}</Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
+        <Animated.View 
+          entering={FadeInDown.delay(100).duration(600)}
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            rowGap: 16,
+            marginTop: 24,
+            marginBottom: 24,
+            zIndex: 10,
+            position: "relative",
+          }}
+        >
+          {[
+            { label: "DAY STREAK", value: "14", icon: "🔥" },
+            { label: "TOTAL RITUALS", value: "126", icon: "✨" },
+            { label: "CONSISTENCY", value: "91%", icon: "📈" },
+            { label: "AFFIRMATIONS", value: "142", icon: "🌿" },
+          ].map((item) => (
+            <View
+              key={item.label}
+              style={{
+                width: "47%",
+                height: 170,
+                borderRadius: 28,
+                paddingTop: 20,
+                paddingBottom: 22,
+                paddingHorizontal: 20,
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                backgroundColor: "rgba(12, 14, 28, 0.82)",
+                borderWidth: 1,
+                borderColor: "rgba(255, 255, 255, 0.10)",
+              }}
+            >
+              <Text style={{ fontSize: 38, includeFontPadding: false }}>{item.icon}</Text>
+              <View style={{ width: "100%" }}>
+                <Text
+                  style={{
+                    fontSize: 34,
+                    fontWeight: "700",
+                    color: "#FFFFFF",
+                    fontFamily: "DMSans_700Bold",
+                    includeFontPadding: false,
+                  }}
+                >
+                  {item.value}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    textTransform: "uppercase",
+                    color: "rgba(255, 255, 255, 0.6)",
+                    fontFamily: "DMSans_500Medium",
+                    marginTop: 6,
+                    includeFontPadding: false,
+                  }}
+                >
+                  {item.label}
+                </Text>
+              </View>
             </View>
-          </GlassCard>
-
-          <GlassCard padding="md" animated={false} style={styles.statCard}>
-            <Text style={styles.statEmoji}>✨</Text>
-            <View>
-              <Text style={styles.statValue}>{sessionData?.lifetimeRituals || 37}</Text>
-              <Text style={styles.statLabel}>Total Rituals</Text>
-            </View>
-          </GlassCard>
-
-          <GlassCard padding="md" animated={false} style={styles.statCard}>
-            <Text style={styles.statEmoji}>📈</Text>
-            <View>
-              <Text style={styles.statValue}>84%</Text>
-              <Text style={styles.statLabel}>Consistency</Text>
-            </View>
-          </GlassCard>
-
-          <GlassCard padding="md" animated={false} style={styles.statCard}>
-            <Text style={styles.statEmoji}>🌿</Text>
-            <View>
-              <Text style={styles.statValue}>142</Text>
-              <Text style={styles.statLabel}>Affirmations</Text>
-            </View>
-          </GlassCard>
+          ))}
         </Animated.View>
 
         {showRecovery && (
@@ -242,7 +274,7 @@ export default function HomeScreen() {
           ) : (
             <GlassCard padding="lg" animated={false} style={styles.emptyCard}>
               <Text style={styles.emptyText}>
-                Your intention is waiting to be materialized. Take a deep breath and begin your daily sequence.
+                A personalized affirmation is ready for your current emotional state.
               </Text>
               <PrimaryButton
                 onPress={handleBeginRitual}
@@ -428,24 +460,36 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   statCard: {
-    width: "48.5%",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+    width: "47%",
+    height: 150,
+    justifyContent: "center",
+    alignItems: "flex-start",
+    paddingVertical: 22,
+    paddingHorizontal: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    borderColor: "rgba(255, 255, 255, 0.06)",
+  },
+  statTextContainer: {
+    width: "100%",
   },
   statEmoji: {
-    fontSize: 24,
+    fontSize: 34,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 34,
     fontWeight: "700",
     color: "#ffffff",
     fontFamily: "DM-Sans",
+    marginTop: 12,
   },
   statLabel: {
     fontSize: 11,
     color: "rgba(255, 255, 255, 0.4)",
     fontFamily: "DM-Sans",
+    fontWeight: "700",
+    letterSpacing: 2,
+    opacity: 0.7,
+    marginTop: 8,
   },
   recoveryContainer: {
     marginBottom: 24,
@@ -470,7 +514,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     color: "rgba(255, 255, 255, 0.3)",
     fontWeight: "700",
-    marginBottom: 12,
+    marginBottom: 8,
     paddingLeft: 2,
     fontFamily: "DM-Sans",
   },

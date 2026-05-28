@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
     fontFamily: "DM-Sans",
   },
   section: {
-    marginBottom: 24,
+    marginTop: 28,
   },
   sectionTitle: {
     fontSize: 11,
