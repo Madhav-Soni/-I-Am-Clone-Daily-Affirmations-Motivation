@@ -1,10 +1,19 @@
 import type { ReactNode } from "react";
 import { Platform, StyleSheet, View, type ViewProps } from "react-native";
 import { BlurView } from "expo-blur";
-import Animated from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  interpolateColor,
+} from "react-native-reanimated";
+import { useEffect } from "react";
 import { fadeInUp } from "@/animations/presets";
 import { glass } from "@/theme/glass";
 import { radius } from "@/theme/tokens";
+import { colors } from "@/theme/tokens";
+import { spring } from "@/theme/motion";
 import { cn } from "@/shared/utils/cn";
 
 type GlassCardProps = ViewProps & {
@@ -13,6 +22,7 @@ type GlassCardProps = ViewProps & {
   intensity?: number;
   animated?: boolean;
   padding?: "none" | "sm" | "md" | "lg";
+  selected?: boolean;
 };
 
 const paddingMap = {
@@ -29,11 +39,46 @@ export function GlassCard({
   animated = true,
   padding = "md",
   style,
+  selected = false,
   ...props
 }: GlassCardProps) {
+  const scale = useSharedValue(1);
+  const activeProgress = useSharedValue(0);
+
+  useEffect(() => {
+    if (selected) {
+      scale.value = withSpring(1.02, spring.snappy);
+      activeProgress.value = withTiming(1, { duration: 250 });
+    } else {
+      scale.value = withSpring(1, spring.gentle);
+      activeProgress.value = withTiming(0, { duration: 200 });
+    }
+  }, [selected]);
+
+  const animatedInnerStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+      borderColor: interpolateColor(
+        activeProgress.value,
+        [0, 1],
+        ["rgba(255, 255, 255, 0.08)", "rgba(56, 189, 248, 0.8)"]
+      ),
+      backgroundColor: interpolateColor(
+        activeProgress.value,
+        [0, 1],
+        ["rgba(255, 255, 255, 0.03)", "rgba(14, 165, 233, 0.1)"]
+      ),
+      shadowColor: "#0ea5e9",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: withTiming(selected ? 0.35 : 0, { duration: 250 }),
+      shadowRadius: withTiming(selected ? 12 : 0, { duration: 250 }),
+      elevation: withTiming(selected ? 4 : 0, { duration: 250 }),
+    };
+  });
+
   const inner = (
-    <View
-      style={[styles.inner, { padding: paddingMap[padding] }, style]}
+    <Animated.View
+      style={[styles.inner, animatedInnerStyle, { padding: paddingMap[padding] }, style]}
       className={className}
       {...props}
     >
@@ -45,7 +90,7 @@ export function GlassCard({
       />
       <View style={styles.highlight} pointerEvents="none" />
       <View style={styles.content}>{children}</View>
-    </View>
+    </Animated.View>
   );
 
   if (!animated) {

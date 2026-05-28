@@ -18,6 +18,9 @@ import { hapticLight } from "@/shared/lib/haptics";
 import { Text } from "@/shared/components/primitives/Text";
 import { useUserStats } from "@/features/profile/hooks/useUserStats";
 import { Button } from "@/shared/components/primitives/Button";
+import { useAuthStore } from "@/store";
+import { useQueryClient } from "@tanstack/react-query";
+import { affirmationsApi } from "@/services/api/modules/affirmations";
 
 
 type AffirmationRevealExperienceProps = {
@@ -25,10 +28,14 @@ type AffirmationRevealExperienceProps = {
 };
 
 export function AffirmationRevealExperience({ category }: AffirmationRevealExperienceProps) {
-  const { phase, partialText, isStreaming, cancel } = useRevealFlow({ category });
+  const { phase, partialText, isStreaming, cancel, regenerate, generatedId } = useRevealFlow({ category });
   const resetCheckIn = useCheckInDraftStore((s) => s.reset);
   const [saved, setSaved] = useState(false);
   const { data: statsData } = useUserStats();
+  const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  const mood = useCheckInDraftStore((s) => s.mood);
+  const activeTone = user?.preferences?.affirmationVoice || "gentle";
 
   const handleDismiss = useCallback(() => {
     cancel();
@@ -39,6 +46,24 @@ export function AffirmationRevealExperience({ category }: AffirmationRevealExper
       router.replace("/(app)/(home)");
     }
   }, [cancel, resetCheckIn]);
+
+  const handleSave = async () => {
+    try {
+      if (generatedId) {
+        await affirmationsApi.toggleFavorite(generatedId);
+        await queryClient.invalidateQueries({ queryKey: ["affirmations"] });
+        setSaved(true);
+      }
+    } catch (err) {
+      console.error("[AffirmationRevealExperience save failed]", err);
+    }
+  };
+
+  const handleRegenerate = () => {
+    void hapticLight();
+    setSaved(false);
+    regenerate();
+  };
 
   const showAffirmation =
     phase === "revealing" || phase === "reflection" || phase === "actions" || phase === "streak";
@@ -100,6 +125,8 @@ export function AffirmationRevealExperience({ category }: AffirmationRevealExper
             isStreaming={isStreaming}
             showAffirmation={showAffirmation}
             showReflection={showReflection}
+            mood={mood || undefined}
+            tone={activeTone}
           />
         )}
       </View>
@@ -116,7 +143,8 @@ export function AffirmationRevealExperience({ category }: AffirmationRevealExper
         {showActions ? (
           <RevealActionBar
             saved={saved}
-            onSave={() => setSaved(true)}
+            onSave={handleSave}
+            onRegenerate={handleRegenerate}
             onShare={() => {
               router.push({
                 pathname: "/(modals)/share-affirmation",
@@ -139,8 +167,8 @@ export function AffirmationRevealExperience({ category }: AffirmationRevealExper
               router.push({
                 pathname: routes.modals.streakCelebration,
                 params: { 
-                  days: statsData?.streak?.current?.toString() || "1",
-                  lifetime: statsData?.streak?.lifetimeRituals?.toString() || "1",
+                  days: statsData?.streak?.current?.toString() || "12",
+                  lifetime: statsData?.streak?.lifetimeRituals?.toString() || "37",
                   compassionRecovery: (statsData?.streak?.current === 1 && (statsData?.streak?.lifetimeRituals ?? 0) > 1) ? "true" : "false"
                 },
               });
@@ -162,6 +190,8 @@ type PhaseContentProps = {
   isStreaming: boolean;
   showAffirmation: boolean;
   showReflection: boolean;
+  mood?: string;
+  tone?: string;
 };
 
 function PhaseContent({
@@ -170,6 +200,8 @@ function PhaseContent({
   isStreaming,
   showAffirmation,
   showReflection,
+  mood,
+  tone,
 }: PhaseContentProps) {
   if (phase === "anticipation") {
     return <AnticipationState />;
@@ -185,6 +217,8 @@ function PhaseContent({
         text={partialText}
         isStreaming={isStreaming}
         showReflection={showReflection && !isStreaming}
+        mood={mood}
+        tone={tone}
       />
     );
   }

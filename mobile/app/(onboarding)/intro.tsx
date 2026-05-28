@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import Animated from "react-native-reanimated";
@@ -12,6 +13,16 @@ import {
 } from "@/shared/components/primitives";
 
 export default function OnboardingIntroScreen() {
+  const [loading, setLoading] = useState(false);
+
+  const handleBegin = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      router.push(routes.onboarding.topics);
+    }, 600);
+  };
+
   return (
     <FullscreenScreen gradient="dusk" contentClassName="justify-center py-6 padded">
       <Animated.View entering={fadeInUp} style={styles.container}>
@@ -31,7 +42,8 @@ export default function OnboardingIntroScreen() {
         <PrimaryButton
           fullWidth
           size="lg"
-          onPress={() => router.push(routes.onboarding.topics)}
+          onPress={handleBegin}
+          loading={loading}
         >
           Begin Setup
         </PrimaryButton>

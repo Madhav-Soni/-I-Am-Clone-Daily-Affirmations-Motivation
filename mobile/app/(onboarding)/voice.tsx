@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StyleSheet, View, Pressable } from "react-native";
 import { router } from "expo-router";
 import Animated from "react-native-reanimated";
@@ -25,13 +26,23 @@ export default function OnboardingVoiceScreen() {
   const { draft, setDraft } = useOnboardingDraftStore();
   const selectedVoice = draft.affirmationVoice;
 
+  const [loading, setLoading] = useState(false);
+
+  const handleContinue = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      router.push(routes.onboarding.frequency);
+    }, 600);
+  };
+
   return (
     <FullscreenScreen gradient="dusk" contentClassName="justify-center py-6 padded">
       <Animated.View entering={fadeInUp} style={styles.container}>
         <View style={styles.header}>
-          <DisplayText color="primary" align="center">Companion Voice</DisplayText>
+          <DisplayText color="primary" align="center">Affirmation Voice</DisplayText>
           <BodyText color="secondary" align="center">
-            Choose the tone of voice that resonates most with your mindfulness practice.
+            Choose the cadence and vocal tone for your daily grounding audio session.
           </BodyText>
         </View>
 
@@ -47,13 +58,13 @@ export default function OnboardingVoiceScreen() {
                   padding="md"
                   animated={false}
                   intensity={isSelected ? 48 : 24}
-                  style={[isSelected && styles.selectedCard]}
+                  selected={isSelected}
                 >
                   <View style={styles.cardContent}>
                     <Text
                       variant="body"
                       color={isSelected ? "primary" : "secondary"}
-                      style={styles.voiceName}
+                      style={styles.label}
                     >
                       {voice.name}
                     </Text>
@@ -70,8 +81,9 @@ export default function OnboardingVoiceScreen() {
         <PrimaryButton
           fullWidth
           size="lg"
-          onPress={() => router.push(routes.onboarding.frequency)}
+          onPress={handleContinue}
           disabled={!selectedVoice}
+          loading={loading}
         >
           Continue
         </PrimaryButton>

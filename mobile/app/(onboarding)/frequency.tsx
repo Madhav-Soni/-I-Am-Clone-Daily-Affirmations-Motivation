@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StyleSheet, View, Pressable } from "react-native";
 import { router } from "expo-router";
 import Animated from "react-native-reanimated";
@@ -24,6 +25,16 @@ export default function OnboardingFrequencyScreen() {
   const { draft, setDraft } = useOnboardingDraftStore();
   const selectedFreq = draft.dailyFrequency;
 
+  const [loading, setLoading] = useState(false);
+
+  const handleContinue = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      router.push(routes.onboarding.complete);
+    }, 600);
+  };
+
   return (
     <FullscreenScreen gradient="dusk" contentClassName="justify-center py-6 padded">
       <Animated.View entering={fadeInUp} style={styles.container}>
@@ -46,7 +57,7 @@ export default function OnboardingFrequencyScreen() {
                   padding="md"
                   animated={false}
                   intensity={isSelected ? 48 : 24}
-                  style={[isSelected && styles.selectedCard]}
+                  selected={isSelected}
                 >
                   <View style={styles.cardContent}>
                     <Text
@@ -69,8 +80,9 @@ export default function OnboardingFrequencyScreen() {
         <PrimaryButton
           fullWidth
           size="lg"
-          onPress={() => router.push(routes.onboarding.complete)}
+          onPress={handleContinue}
           disabled={!selectedFreq}
+          loading={loading}
         >
           Continue
         </PrimaryButton>

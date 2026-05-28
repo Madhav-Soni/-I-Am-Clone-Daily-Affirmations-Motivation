@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { revealActionsEnter } from "@/features/affirmation/animations/revealEntrance";
@@ -10,16 +11,30 @@ import {
 import { hapticLight, hapticSuccess } from "@/shared/lib/haptics";
 
 type RevealActionBarProps = {
-  onSave: () => void;
+  onSave: () => Promise<void> | void;
   onShare: () => void;
   onDone: () => void;
+  onRegenerate: () => void;
   saved?: boolean;
 };
 
-export function RevealActionBar({ onSave, onShare, onDone, saved = false }: RevealActionBarProps) {
-  const handleSave = () => {
+export function RevealActionBar({
+  onSave,
+  onShare,
+  onDone,
+  onRegenerate,
+  saved = false,
+}: RevealActionBarProps) {
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
     void hapticSuccess();
-    onSave();
+    setSaving(true);
+    try {
+      await onSave();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleShare = () => {
@@ -36,14 +51,23 @@ export function RevealActionBar({ onSave, onShare, onDone, saved = false }: Reve
           </SecondaryButton>
         </View>
         <View style={styles.half}>
-          <PrimaryButton fullWidth onPress={handleSave} disabled={saved}>
+          <PrimaryButton fullWidth onPress={handleSave} disabled={saved} loading={saving}>
             {saved ? "Saved" : REVEAL_COPY.save}
           </PrimaryButton>
         </View>
       </View>
-      <GhostButton fullWidth onPress={onDone}>
-        {REVEAL_COPY.done}
-      </GhostButton>
+      <View style={styles.row}>
+        <View style={styles.half}>
+          <SecondaryButton fullWidth onPress={onRegenerate}>
+            🔄 Regenerate
+          </SecondaryButton>
+        </View>
+        <View style={styles.half}>
+          <GhostButton fullWidth onPress={onDone}>
+            {REVEAL_COPY.done}
+          </GhostButton>
+        </View>
+      </View>
     </Animated.View>
   );
 }

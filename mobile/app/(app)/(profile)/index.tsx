@@ -19,7 +19,16 @@ import { authApi } from "@/services/api/modules/auth";
 import { routes } from "@/constants/routes";
 import { colors } from "@/theme/tokens";
 import { hapticLight, hapticSuccess } from "@/shared/lib/haptics";
-import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
+import Animated, { 
+  FadeInUp, 
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  interpolateColor
+} from "react-native-reanimated";
+import { spring } from "@/theme/motion";
 
 const AVAILABLE_VOICES = [
   { id: "gentle" as const, name: "Gentle", desc: "Soothing & protective" },
@@ -38,6 +47,81 @@ const AVAILABLE_THEMES = [
   { id: "dusk", name: "Dusk", colors: ["#1F1625", "#0F0B12"] },
   { id: "minimal", name: "Minimal", colors: ["#1C1917", "#0C0A09"] },
 ];
+
+function AnimatedTopicPill({
+  topic,
+  selected,
+  onPress,
+}: {
+  topic: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+  const activeProgress = useSharedValue(0);
+
+  useEffect(() => {
+    if (selected) {
+      scale.value = withSequence(
+        withSpring(1.08, spring.snappy),
+        withSpring(1.02, spring.gentle)
+      );
+      activeProgress.value = withSpring(1, spring.gentle);
+    } else {
+      scale.value = withSpring(1, spring.gentle);
+      activeProgress.value = withSpring(0, spring.gentle);
+    }
+  }, [selected]);
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.94, spring.snappy);
+    opacity.value = withSpring(0.9, spring.snappy);
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(selected ? 1.02 : 1, spring.gentle);
+    opacity.value = withSpring(1, spring.gentle);
+  };
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+      opacity: opacity.value,
+      borderColor: interpolateColor(
+        activeProgress.value,
+        [0, 1],
+        ["rgba(255, 255, 255, 0.05)", "rgba(56, 189, 248, 0.8)"]
+      ),
+      backgroundColor: interpolateColor(
+        activeProgress.value,
+        [0, 1],
+        ["rgba(255, 255, 255, 0.03)", "rgba(56, 189, 248, 0.15)"]
+      ),
+      shadowColor: "#0ea5e9",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: withSpring(selected ? 0.35 : 0, spring.gentle),
+      shadowRadius: withSpring(selected ? 8 : 0, spring.gentle),
+      borderRadius: 16,
+      borderWidth: 1,
+    };
+  });
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.topicChipInner}
+      >
+        <Text style={[styles.topicChipText, selected && styles.topicChipTextActive]}>
+          {topic}
+        </Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
@@ -81,6 +165,7 @@ export default function ProfileScreen() {
     setSaving(true);
     setSuccessMessage(null);
     try {
+      await new Promise((resolve) => setTimeout(resolve, 600));
       const preferences = {
         affirmationVoice: selectedVoice as any,
         topics: selectedTopics.length > 0 ? selectedTopics : ["Mindfulness"],
@@ -240,12 +325,13 @@ export default function ProfileScreen() {
                       void hapticLight();
                       setSelectedVoice(voice.id);
                     }}
-                    style={[styles.voiceItem, active && styles.voiceItemActive]}
                   >
-                    <Text style={[styles.voiceName, active && styles.voiceNameActive]}>
-                      {voice.name}
-                    </Text>
-                    <Text style={styles.voiceDesc}>{voice.desc}</Text>
+                    <GlassCard padding="sm" animated={false} selected={active}>
+                      <Text style={[styles.voiceName, active && styles.voiceNameActive]}>
+                        {voice.name}
+                      </Text>
+                      <Text style={styles.voiceDesc}>{voice.desc}</Text>
+                    </GlassCard>
                   </Pressable>
                 );
               })}
@@ -256,15 +342,12 @@ export default function ProfileScreen() {
               {AVAILABLE_TOPICS.map((topic) => {
                 const active = selectedTopics.includes(topic);
                 return (
-                  <Pressable
+                  <AnimatedTopicPill
                     key={topic}
+                    topic={topic}
+                    selected={active}
                     onPress={() => handleTopicToggle(topic)}
-                    style={[styles.topicChip, active && styles.topicChipActive]}
-                  >
-                    <Text style={[styles.topicChipText, active && styles.topicChipTextActive]}>
-                      {topic}
-                    </Text>
-                  </Pressable>
+                  />
                 );
               })}
             </View>
@@ -398,11 +481,11 @@ export default function ProfileScreen() {
         <View style={styles.saveContainer}>
           <PrimaryButton
             onPress={handleSave}
-            disabled={saving}
             size="lg"
             fullWidth
+            loading={saving}
           >
-            {saving ? <ActivityIndicator color="#ffffff" /> : "Save Changes"}
+            Save Changes
           </PrimaryButton>
         </View>
       </ScrollView>
@@ -554,6 +637,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.03)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.05)",
+  },
+  topicChipInner: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
   },
   topicChipActive: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",

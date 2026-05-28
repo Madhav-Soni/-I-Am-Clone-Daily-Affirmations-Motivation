@@ -1,6 +1,13 @@
+import { useEffect, useState } from "react";
 import { StyleSheet, View, Pressable, ScrollView } from "react-native";
 import { router } from "expo-router";
-import Animated from "react-native-reanimated";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  interpolateColor,
+} from "react-native-reanimated";
 import { fadeInUp } from "@/animations/presets";
 import { routes } from "@/constants/routes";
 import { useOnboardingDraftStore } from "@/store/slices/onboardingDraftSlice";
@@ -13,6 +20,7 @@ import {
   Text,
 } from "@/shared/components/primitives";
 import { colors } from "@/theme/tokens";
+import { spring } from "@/theme/motion";
 
 const TOPICS = [
   "Mindfulness",
@@ -25,9 +33,89 @@ const TOPICS = [
   "General",
 ];
 
+function AnimatedTopicPill({
+  topic,
+  selected,
+  onPress,
+}: {
+  topic: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+  const activeProgress = useSharedValue(0);
+
+  useEffect(() => {
+    if (selected) {
+      scale.value = withSequence(
+        withSpring(1.08, spring.snappy),
+        withSpring(1.02, spring.gentle)
+      );
+      activeProgress.value = withSpring(1, spring.gentle);
+    } else {
+      scale.value = withSpring(1, spring.gentle);
+      activeProgress.value = withSpring(0, spring.gentle);
+    }
+  }, [selected]);
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.94, spring.snappy);
+    opacity.value = withSpring(0.9, spring.snappy);
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(selected ? 1.02 : 1, spring.gentle);
+    opacity.value = withSpring(1, spring.gentle);
+  };
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+      opacity: opacity.value,
+      borderColor: interpolateColor(
+        activeProgress.value,
+        [0, 1],
+        ["rgba(255, 255, 255, 0.1)", "rgba(56, 189, 248, 0.8)"]
+      ),
+      backgroundColor: interpolateColor(
+        activeProgress.value,
+        [0, 1],
+        ["rgba(255, 255, 255, 0.05)", "rgba(56, 189, 248, 0.15)"]
+      ),
+      shadowColor: "#0ea5e9",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: withSpring(selected ? 0.35 : 0, spring.gentle),
+      shadowRadius: withSpring(selected ? 8 : 0, spring.gentle),
+      borderRadius: 24,
+      borderWidth: 1,
+    };
+  });
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.topicPillInner}
+      >
+        <Text
+          variant="body"
+          color={selected ? "primary" : "secondary"}
+          style={styles.pillText}
+        >
+          {topic}
+        </Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export default function OnboardingTopicsScreen() {
   const { draft, setDraft } = useOnboardingDraftStore();
   const selectedTopics = draft.topics || [];
+  const [loading, setLoading] = useState(false);
 
   const toggleTopic = (topic: string) => {
     if (selectedTopics.includes(topic)) {
@@ -35,6 +123,14 @@ export default function OnboardingTopicsScreen() {
     } else {
       setDraft({ topics: [...selectedTopics, topic] });
     }
+  };
+
+  const handleContinue = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      router.push(routes.onboarding.voice);
+    }, 600);
   };
 
   return (
@@ -52,22 +148,12 @@ export default function OnboardingTopicsScreen() {
             {TOPICS.map((topic) => {
               const isSelected = selectedTopics.includes(topic);
               return (
-                <Pressable
+                <AnimatedTopicPill
                   key={topic}
+                  topic={topic}
+                  selected={isSelected}
                   onPress={() => toggleTopic(topic)}
-                  style={[
-                    styles.topicPill,
-                    isSelected && styles.topicPillSelected,
-                  ]}
-                >
-                  <Text
-                    variant="body"
-                    color={isSelected ? "primary" : "secondary"}
-                    style={styles.pillText}
-                  >
-                    {topic}
-                  </Text>
-                </Pressable>
+                />
               );
             })}
           </ScrollView>
@@ -76,8 +162,9 @@ export default function OnboardingTopicsScreen() {
         <PrimaryButton
           fullWidth
           size="lg"
-          onPress={() => router.push(routes.onboarding.voice)}
+          onPress={handleContinue}
           disabled={selectedTopics.length === 0}
+          loading={loading}
         >
           Continue
         </PrimaryButton>
@@ -103,17 +190,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 8,
   },
-  topicPill: {
+  topicPillInner: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 24,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
-  topicPillSelected: {
-    backgroundColor: "rgba(56, 189, 248, 0.2)",
-    borderColor: colors.luxury.accentSoft,
   },
   pillText: {
     fontSize: 15,

@@ -27,6 +27,7 @@ type UseRevealFlowOptions = {
 
 export function useRevealFlow(options: UseRevealFlowOptions = {}) {
   const [phase, setPhase] = useState<RevealPhase>("anticipation");
+  const [generatedId, setGeneratedId] = useState<string | null>(null);
   const mood = useCheckInDraftStore((s) => s.mood);
   const note = useCheckInDraftStore((s) => s.note);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -86,6 +87,7 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
     if (isCurrent()) {
       setCategory(options.category ?? "General");
       setPartialText("");
+      setGeneratedId(null);
     }
     safeSetPhase("anticipation");
 
@@ -129,6 +131,9 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
 
         if (response?.data?.affirmation?.content) {
           fullText = response.data.affirmation.content;
+          if (isCurrent()) {
+            setGeneratedId(response.data.affirmation._id);
+          }
         } else {
           throw new Error("Invalid response schema");
         }
@@ -259,6 +264,8 @@ export function useRevealFlow(options: UseRevealFlowOptions = {}) {
     isComplete,
     cancel,
     reset,
+    regenerate: runFlow,
+    generatedId,
   };
 }
 

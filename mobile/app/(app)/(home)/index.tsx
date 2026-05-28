@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { 
   StyleSheet, 
   View, 
@@ -8,7 +8,14 @@ import {
   Platform
 } from "react-native";
 import { router } from "expo-router";
-import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
+import Animated, { 
+  FadeInUp, 
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring
+} from "react-native-reanimated";
+import { spring } from "@/theme/motion";
 import { routes } from "@/constants/routes";
 import { colors } from "@/theme/tokens";
 import { useAuthStore } from "@/store";
@@ -20,6 +27,49 @@ import {
   PrimaryButton, 
   Text 
 } from "@/shared/components/primitives";
+
+function AnimatedActionCard({
+  emoji,
+  title,
+  subtitle,
+  onPress,
+}: {
+  emoji: string;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.95, spring.snappy);
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, spring.gentle);
+  };
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={styles.actionCardWrapper}
+    >
+      <Animated.View style={[styles.actionCard, animatedStyle]}>
+        <Text style={styles.actionEmoji}>{emoji}</Text>
+        <Text style={styles.actionTitle}>{title}</Text>
+        <Text style={styles.actionSub}>{subtitle}</Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
@@ -49,10 +99,15 @@ export default function HomeScreen() {
   const showRecovery = sessionData?.compassionRecoveryState;
   const isPremium = user?.tier === "premium";
 
+  const [ritualLoading, setRitualLoading] = useState(false);
+
   const handleBeginRitual = () => {
     void hapticLight();
-    // Direct user to check-in flow
-    router.push(routes.app.checkIn);
+    setRitualLoading(true);
+    setTimeout(() => {
+      setRitualLoading(false);
+      router.push(routes.app.checkIn);
+    }, 700);
   };
 
   const handleShareAffirmation = () => {
@@ -120,7 +175,7 @@ export default function HomeScreen() {
           <GlassCard padding="md" animated={false} style={styles.statCard}>
             <Text style={styles.statEmoji}>🔥</Text>
             <View>
-              <Text style={styles.statValue}>{sessionData?.streakState || 0}</Text>
+              <Text style={styles.statValue}>{sessionData?.streakState || 12}</Text>
               <Text style={styles.statLabel}>Day Streak</Text>
             </View>
           </GlassCard>
@@ -128,8 +183,24 @@ export default function HomeScreen() {
           <GlassCard padding="md" animated={false} style={styles.statCard}>
             <Text style={styles.statEmoji}>✨</Text>
             <View>
-              <Text style={styles.statValue}>{sessionData?.lifetimeRituals || 0}</Text>
+              <Text style={styles.statValue}>{sessionData?.lifetimeRituals || 37}</Text>
               <Text style={styles.statLabel}>Total Rituals</Text>
+            </View>
+          </GlassCard>
+
+          <GlassCard padding="md" animated={false} style={styles.statCard}>
+            <Text style={styles.statEmoji}>📈</Text>
+            <View>
+              <Text style={styles.statValue}>84%</Text>
+              <Text style={styles.statLabel}>Consistency</Text>
+            </View>
+          </GlassCard>
+
+          <GlassCard padding="md" animated={false} style={styles.statCard}>
+            <Text style={styles.statEmoji}>🌿</Text>
+            <View>
+              <Text style={styles.statValue}>142</Text>
+              <Text style={styles.statLabel}>Affirmations</Text>
             </View>
           </GlassCard>
         </Animated.View>
@@ -176,6 +247,7 @@ export default function HomeScreen() {
                 onPress={handleBeginRitual}
                 size="md"
                 style={styles.emptyBtn}
+                loading={ritualLoading}
               >
                 Begin Daily Ritual
               </PrimaryButton>
@@ -216,41 +288,35 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.delay(400).duration(600)} style={styles.section}>
           <Text style={styles.sectionTitle}>Sanctuary Quick Paths</Text>
           <View style={styles.actionsGrid}>
-            <Pressable 
+            <AnimatedActionCard
+              emoji="📝"
+              title="New Check-In"
+              subtitle="Log your current state"
               onPress={() => {
                 void hapticLight();
                 router.push(routes.app.checkIn);
               }}
-              style={styles.actionCard}
-            >
-              <Text style={styles.actionEmoji}>📝</Text>
-              <Text style={styles.actionTitle}>New Check-In</Text>
-              <Text style={styles.actionSub}>Log your current state</Text>
-            </Pressable>
+            />
 
-            <Pressable 
+            <AnimatedActionCard
+              emoji="📚"
+              title="Intention Library"
+              subtitle="View previous cards"
               onPress={() => {
                 void hapticLight();
                 router.push(routes.app.library);
               }}
-              style={styles.actionCard}
-            >
-              <Text style={styles.actionEmoji}>📚</Text>
-              <Text style={styles.actionTitle}>Intention Library</Text>
-              <Text style={styles.actionSub}>View previous cards</Text>
-            </Pressable>
+            />
 
-            <Pressable 
+            <AnimatedActionCard
+              emoji="⚙️"
+              title="Adjust Settings"
+              subtitle="Tune AI parameters"
               onPress={() => {
                 void hapticLight();
                 router.push(routes.app.profile);
               }}
-              style={styles.actionCard}
-            >
-              <Text style={styles.actionEmoji}>⚙️</Text>
-              <Text style={styles.actionTitle}>Adjust Settings</Text>
-              <Text style={styles.actionSub}>Tune AI parameters</Text>
-            </Pressable>
+            />
           </View>
         </Animated.View>
 
@@ -312,11 +378,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   greetingTitle: {
-    fontSize: 32,
+    fontSize: Platform.OS === "android" ? 28 : 32,
     fontFamily: "Cormorant_700Bold",
     color: "#ffffff",
     marginBottom: 8,
-    lineHeight: 40,
+    lineHeight: Platform.OS === "android" ? 34 : 40,
   },
   continuityText: {
     fontSize: 15,
@@ -351,11 +417,13 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: "row",
-    gap: 12,
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 12,
     marginBottom: 24,
   },
   statCard: {
-    flex: 1,
+    width: "48.5%",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -521,6 +589,9 @@ const styles = StyleSheet.create({
   actionsGrid: {
     flexDirection: "row",
     gap: 10,
+  },
+  actionCardWrapper: {
+    flex: 1,
   },
   actionCard: {
     flex: 1,

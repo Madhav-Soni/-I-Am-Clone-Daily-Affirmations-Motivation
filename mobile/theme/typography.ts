@@ -1,4 +1,4 @@
-import { TextStyle } from "react-native";
+import { Platform, TextStyle } from "react-native";
 
 export const fontFamily = {
   sans: "DMSans_400Regular",
@@ -26,29 +26,31 @@ type TypographyStyle = Pick<
   "fontSize" | "lineHeight" | "letterSpacing" | "fontFamily" | "fontWeight"
 >;
 
+const isAndroid = Platform.OS === "android";
+
 export const typography: Record<TypographyVariant, TypographyStyle> = {
   displayLg: {
     fontFamily: fontFamily.displayBold,
-    fontSize: 40,
-    lineHeight: 48,
+    fontSize: isAndroid ? 34 : 40,
+    lineHeight: isAndroid ? 42 : 48,
     letterSpacing: -0.5,
   },
   display: {
     fontFamily: fontFamily.displaySemiBold,
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: isAndroid ? 27 : 32,
+    lineHeight: isAndroid ? 35 : 40,
     letterSpacing: -0.3,
   },
   headline: {
     fontFamily: fontFamily.display,
-    fontSize: 26,
-    lineHeight: 34,
+    fontSize: isAndroid ? 23 : 26,
+    lineHeight: isAndroid ? 30 : 34,
     letterSpacing: 0,
   },
   title: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 18,
+    lineHeight: 26,
     letterSpacing: -0.2,
   },
   body: {
@@ -83,8 +85,8 @@ export const typography: Record<TypographyVariant, TypographyStyle> = {
   },
   affirmation: {
     fontFamily: fontFamily.display,
-    fontSize: 28,
-    lineHeight: 40,
+    fontSize: isAndroid ? 24 : 28,
+    lineHeight: isAndroid ? 34 : 40,
     letterSpacing: 0.3,
   },
 };
