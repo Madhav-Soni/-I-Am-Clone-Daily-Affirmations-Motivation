@@ -46,17 +46,17 @@ Adjust your reminder cadence, edit active focus topics, toggle theme aesthetics,
 
 ## 📱 Interface Gallery
 
-<p align="center">
-  <img src="./assets/screenshots/mockup.png" width="800" alt="I AM WELL 3-Phone Mockup" />
-</p>
-
-| 1. Guided Onboarding | 2. Emotional Check-in | 3. AI Ritual Loading |
+| 1. User Stats & Dashboard | 2. AI Ritual Trigger Card | 3. Mood Check-in Landing |
 |---|---|---|
-| <img src="./assets/screenshots/1_onboarding.png" width="220" /> | <img src="./assets/screenshots/2_checkin.png" width="220" /> | <img src="./assets/screenshots/3_loading.png" width="220" /> |
+| <img src="./assets/screenshots/stats_dashboard.png" width="220" /> | <img src="./assets/screenshots/begin_ritual.png" width="220" /> | <img src="./assets/screenshots/mood_check_in.png" width="220" /> |
 
-| 4. Typewriter Reveal | 5. Saved Intentions Library | 6. User Stats & Streak |
+| 4. Intention Library List | 5. Category & Mood Filters | 6. Profile Configuration |
 |---|---|---|
-| <img src="./assets/screenshots/4_reveal.png" width="220" /> | <img src="./assets/screenshots/5_library.png" width="220" /> | <img src="./assets/screenshots/6_profile.png" width="220" /> |
+| <img src="./assets/screenshots/intention_library.png" width="220" /> | <img src="./assets/screenshots/library_filters.png" width="220" /> | <img src="./assets/screenshots/profile_configuration.png" width="220" /> |
+
+| 7. Focus & Stepper Settings | 8. Account Security Panel |
+|---|---|
+| <img src="./assets/screenshots/profile_focus_settings.png" width="220" /> | <img src="./assets/screenshots/account_settings.png" width="220" /> |
 
 ---
 
@@ -124,3 +124,20 @@ The app utilizes a dark, premium visual aesthetic designed to evoke luxury welln
 - **Stateful Emotional Memory:** Composition algorithm cycles registers and avoiding clichés statefully, and decays emotional notes into a 21-day rolling window to prevent AI feedback loops.
 - **Distress Safety Gating:** If a user logs high-intensity crisis keywords, the AI pipeline is bypassed to instantly serve human-written crisis resources, safeguarding the user's emotional wellbeing.
 - **Offline Caching:** React Query and local file caches hydrate the home state instantly when network connection is offline.
+
+---
+
+## 🤖 AI Assisted Development
+
+This project was built using iterative AI-assisted development (ChatGPT, Claude Code, and Windsurf) for:
+- Spacing & layout alignments (Android stats left bearing clip fixes)
+- Android-specific stacking context layering (`zIndex` + `elevation` on SafeAreaView wrapper layers)
+- Client-side token refresh single-flight mutexes & device-bound refresh sessions
+- UI theme visual polish (cinematic glass card glow layouts)
+
+All developer prompt traces and debugging records are organized under:
+`ai-logs/`
+- **[ui-fixes.md](file:///Users/madhav/Desktop/I%20AM%20WELL/ai-logs/ui-fixes.md)**: Visual dashboard widget metrics & typography modifications.
+- **[debugging.md](file:///Users/madhav/Desktop/I%20AM%20WELL/ai-logs/debugging.md)**: Stacking orders & Android environment config resolutions.
+- **[architecture.md](file:///Users/madhav/Desktop/I%20AM%20WELL/ai-logs/architecture.md)**: Feature separation paradigms and modular hooks layout.
+- **[prompts.md](file:///Users/madhav/Desktop/I%20AM%20WELL/ai-logs/prompts.md)**: Chronological user queries & AI instructions history.
