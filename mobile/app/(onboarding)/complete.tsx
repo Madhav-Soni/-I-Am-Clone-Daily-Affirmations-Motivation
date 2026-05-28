@@ -77,8 +77,10 @@ export default function OnboardingCompleteScreen() {
           size="lg"
           onPress={handleFinish}
           disabled={loading}
+          loading={loading}
+          loadingText="Preparing..."
         >
-          {loading ? <ActivityIndicator color="#ffffff" /> : "Enter Sanctuary"}
+          Enter Sanctuary
         </PrimaryButton>
       </Animated.View>
     </FullscreenScreen>

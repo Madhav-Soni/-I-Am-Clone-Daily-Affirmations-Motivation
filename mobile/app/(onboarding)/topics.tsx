@@ -49,8 +49,8 @@ function AnimatedTopicPill({
   useEffect(() => {
     if (selected) {
       scale.value = withSequence(
-        withSpring(1.08, spring.snappy),
-        withSpring(1.02, spring.gentle)
+        withSpring(1.1, spring.snappy),
+        withSpring(1.04, spring.gentle)
       );
       activeProgress.value = withSpring(1, spring.gentle);
     } else {
@@ -65,7 +65,7 @@ function AnimatedTopicPill({
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(selected ? 1.02 : 1, spring.gentle);
+    scale.value = withSpring(selected ? 1.04 : 1, spring.gentle);
     opacity.value = withSpring(1, spring.gentle);
   };
 
@@ -76,17 +76,17 @@ function AnimatedTopicPill({
       borderColor: interpolateColor(
         activeProgress.value,
         [0, 1],
-        ["rgba(255, 255, 255, 0.1)", "rgba(56, 189, 248, 0.8)"]
+        ["rgba(255, 255, 255, 0.1)", "rgba(56, 189, 248, 0.9)"]
       ),
       backgroundColor: interpolateColor(
         activeProgress.value,
         [0, 1],
-        ["rgba(255, 255, 255, 0.05)", "rgba(56, 189, 248, 0.15)"]
+        ["rgba(255, 255, 255, 0.05)", "rgba(56, 189, 248, 0.2)"]
       ),
       shadowColor: "#0ea5e9",
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: withSpring(selected ? 0.35 : 0, spring.gentle),
-      shadowRadius: withSpring(selected ? 8 : 0, spring.gentle),
+      shadowOpacity: withSpring(selected ? 0.65 : 0, spring.gentle),
+      shadowRadius: withSpring(selected ? 12 : 0, spring.gentle),
       borderRadius: 24,
       borderWidth: 1,
     };
@@ -165,6 +165,7 @@ export default function OnboardingTopicsScreen() {
           onPress={handleContinue}
           disabled={selectedTopics.length === 0}
           loading={loading}
+          loadingText="Preparing..."
         >
           Continue
         </PrimaryButton>

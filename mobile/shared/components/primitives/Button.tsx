@@ -21,6 +21,7 @@ type ButtonProps = PressableProps & {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
+  loadingText?: string;
   fullWidth?: boolean;
   className?: string;
 };
@@ -42,6 +43,7 @@ export function Button({
   variant = "primary",
   size = "md",
   loading = false,
+  loadingText,
   fullWidth = false,
   disabled,
   className,
@@ -55,10 +57,21 @@ export function Button({
   const content = (
     <View style={[styles.content, sizeStyles[size]]}>
       {loading ? (
-        <ActivityIndicator
-          color={variant === "ghost" ? colors.text.secondary : colors.luxury.void}
-          size="small"
-        />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <ActivityIndicator
+            color={variant === "ghost" || variant === "glass" ? colors.text.secondary : colors.luxury.void}
+            size="small"
+          />
+          {loadingText ? (
+            <Text
+              variant={sizeText[size]}
+              color={variant === "ghost" || variant === "glass" ? "secondary" : "primary"}
+              style={variant === "primary" ? styles.primaryLabel : undefined}
+            >
+              {loadingText}
+            </Text>
+          ) : null}
+        </View>
       ) : typeof children === "string" ? (
         <Text
           variant={sizeText[size]}

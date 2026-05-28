@@ -23,6 +23,7 @@ import { hapticSuccess } from "@/shared/lib/haptics";
 export function MoodReflectionExperience() {
   const [hasMounted, setHasMounted] = useState(false);
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
 
   const mood = useCheckInDraftStore((s) => s.mood);
   const note = useCheckInDraftStore((s) => s.note);
@@ -67,13 +68,18 @@ export function MoodReflectionExperience() {
   const handleComplete = () => {
     try {
       void hapticSuccess();
+      setCompleting(true);
       console.log("[REFLECTION ACTION] Save check-in triggered. Target Mood:", mood, "Journal Note:", note);
-      router.push({
-        pathname: routes.modals.affirmationReveal,
-        params: { category: mood ?? "General" },
-      });
+      setTimeout(() => {
+        setCompleting(false);
+        router.push({
+          pathname: routes.modals.affirmationReveal,
+          params: { category: mood ?? "General" },
+        });
+      }, 700);
     } catch (err: any) {
       console.error("[REFLECTION ERROR] Failed during complete action:", err);
+      setCompleting(false);
       setRenderError(err?.message || "Failed to complete check-in.");
     }
   };
@@ -163,7 +169,7 @@ export function MoodReflectionExperience() {
 
           {/* Skip buttons */}
           <View style={styles.skipWrap}>
-            <GhostButton onPress={handleSkip}>{CHECK_IN_COPY.skipNote}</GhostButton>
+            <GhostButton onPress={handleSkip} disabled={completing}>{CHECK_IN_COPY.skipNote}</GhostButton>
           </View>
 
           <View style={[styles.bottomSpacer, { height: 140 + keyboardOffset * 0.2 }]} />
@@ -174,6 +180,8 @@ export function MoodReflectionExperience() {
           label={CHECK_IN_COPY.complete}
           onPress={handleComplete}
           visible
+          loading={completing}
+          disabled={completing}
           bottomInset={keyboardOffset > 0 ? keyboardOffset - 24 : 0}
         />
       </KeyboardAvoidingView>

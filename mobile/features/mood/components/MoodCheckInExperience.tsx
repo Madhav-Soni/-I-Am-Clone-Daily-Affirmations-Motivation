@@ -23,6 +23,7 @@ import { hapticMedium } from "@/shared/lib/haptics";
 export function MoodCheckInExperience() {
   const [hasMounted, setHasMounted] = useState(false);
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [continuing, setContinuing] = useState(false);
 
   // State Hydration checks
   const user = useAuthStore((s) => s.user);
@@ -49,10 +50,15 @@ export function MoodCheckInExperience() {
         return;
       }
       void hapticMedium();
+      setContinuing(true);
       console.log("[CHECK-IN ACTION] Continuing to notes with mood:", mood);
-      router.push(routes.app.checkInNote);
+      setTimeout(() => {
+        setContinuing(false);
+        router.push(routes.app.checkInNote);
+      }, 600);
     } catch (err: any) {
       console.error("[CHECK-IN ERROR] Failed during continue action:", err);
+      setContinuing(false);
       setRenderError(err?.message || "Failed to continue check-in.");
     }
   };
@@ -143,7 +149,8 @@ export function MoodCheckInExperience() {
         label={CHECK_IN_COPY.continue}
         onPress={handleContinue}
         visible={!!mood}
-        disabled={!mood}
+        disabled={!mood || continuing}
+        loading={continuing}
       />
     </FullscreenScreen>
   );

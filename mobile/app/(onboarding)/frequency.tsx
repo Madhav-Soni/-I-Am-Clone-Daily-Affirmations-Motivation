@@ -83,6 +83,7 @@ export default function OnboardingFrequencyScreen() {
           onPress={handleContinue}
           disabled={!selectedFreq}
           loading={loading}
+          loadingText="Preparing..."
         >
           Continue
         </PrimaryButton>

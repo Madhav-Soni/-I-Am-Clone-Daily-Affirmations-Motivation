@@ -1,4 +1,7 @@
-import { Platform, TextStyle } from "react-native";
+import { Platform, TextStyle, Dimensions } from "react-native";
+
+const { width: screenWidth } = Dimensions.get("window");
+const scaleFactor = screenWidth < 380 ? 0.85 : 1.0;
 
 export const fontFamily = {
   sans: "DMSans_400Regular",
@@ -31,20 +34,20 @@ const isAndroid = Platform.OS === "android";
 export const typography: Record<TypographyVariant, TypographyStyle> = {
   displayLg: {
     fontFamily: fontFamily.displayBold,
-    fontSize: isAndroid ? 34 : 40,
-    lineHeight: isAndroid ? 42 : 48,
+    fontSize: Math.round((isAndroid ? 34 : 40) * scaleFactor),
+    lineHeight: Math.round((isAndroid ? 42 : 48) * scaleFactor),
     letterSpacing: -0.5,
   },
   display: {
     fontFamily: fontFamily.displaySemiBold,
-    fontSize: isAndroid ? 27 : 32,
-    lineHeight: isAndroid ? 35 : 40,
+    fontSize: Math.round((isAndroid ? 27 : 32) * scaleFactor),
+    lineHeight: Math.round((isAndroid ? 35 : 40) * scaleFactor),
     letterSpacing: -0.3,
   },
   headline: {
     fontFamily: fontFamily.display,
-    fontSize: isAndroid ? 23 : 26,
-    lineHeight: isAndroid ? 30 : 34,
+    fontSize: Math.round((isAndroid ? 23 : 26) * scaleFactor),
+    lineHeight: Math.round((isAndroid ? 30 : 34) * scaleFactor),
     letterSpacing: 0,
   },
   title: {

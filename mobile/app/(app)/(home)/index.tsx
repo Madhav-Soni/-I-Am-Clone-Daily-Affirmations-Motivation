@@ -5,7 +5,8 @@ import {
   ScrollView, 
   ActivityIndicator, 
   Pressable,
-  Platform
+  Platform,
+  Dimensions
 } from "react-native";
 import { router } from "expo-router";
 import Animated, { 
@@ -248,6 +249,7 @@ export default function HomeScreen() {
                 size="md"
                 style={styles.emptyBtn}
                 loading={ritualLoading}
+                loadingText="Preparing..."
               >
                 Begin Daily Ritual
               </PrimaryButton>
@@ -343,6 +345,9 @@ export default function HomeScreen() {
   );
 }
 
+const { width: screenWidth } = Dimensions.get("window");
+const greetingScale = screenWidth < 380 ? 0.85 : 1.0;
+
 const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 120,
@@ -378,11 +383,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   greetingTitle: {
-    fontSize: Platform.OS === "android" ? 28 : 32,
+    fontSize: Math.round((Platform.OS === "android" ? 28 : 32) * greetingScale),
     fontFamily: "Cormorant_700Bold",
     color: "#ffffff",
     marginBottom: 8,
-    lineHeight: Platform.OS === "android" ? 34 : 40,
+    lineHeight: Math.round((Platform.OS === "android" ? 34 : 40) * greetingScale),
   },
   continuityText: {
     fontSize: 15,

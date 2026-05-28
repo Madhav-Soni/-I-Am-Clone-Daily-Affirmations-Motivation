@@ -44,6 +44,7 @@ export default function OnboardingIntroScreen() {
           size="lg"
           onPress={handleBegin}
           loading={loading}
+          loadingText="Preparing..."
         >
           Begin Setup
         </PrimaryButton>

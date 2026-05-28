@@ -103,9 +103,11 @@ export function MoodPill({
               styles.outer,
               selected && {
                 borderColor: visual.color,
+                borderWidth: 2,
                 shadowColor: visual.color,
-                shadowOpacity: 0.5,
-                shadowRadius: 16,
+                shadowOpacity: 0.7,
+                shadowRadius: 20,
+                elevation: 6,
               },
             ]}
           >
@@ -145,9 +147,9 @@ const styles = StyleSheet.create({
     bottom: -6,
     borderRadius: radius.full,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-    elevation: 8,
+    shadowOpacity: 0.95,
+    shadowRadius: 24,
+    elevation: 10,
   },
   outer: {
     borderRadius: radius.full,

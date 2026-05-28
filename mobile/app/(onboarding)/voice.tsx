@@ -64,7 +64,7 @@ export default function OnboardingVoiceScreen() {
                     <Text
                       variant="body"
                       color={isSelected ? "primary" : "secondary"}
-                      style={styles.label}
+                      style={styles.voiceName}
                     >
                       {voice.name}
                     </Text>
@@ -84,6 +84,7 @@ export default function OnboardingVoiceScreen() {
           onPress={handleContinue}
           disabled={!selectedVoice}
           loading={loading}
+          loadingText="Preparing..."
         >
           Continue
         </PrimaryButton>

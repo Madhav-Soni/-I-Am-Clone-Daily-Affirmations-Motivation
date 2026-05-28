@@ -51,7 +51,7 @@ export function RevealActionBar({
           </SecondaryButton>
         </View>
         <View style={styles.half}>
-          <PrimaryButton fullWidth onPress={handleSave} disabled={saved} loading={saving}>
+          <PrimaryButton fullWidth onPress={handleSave} disabled={saved} loading={saving} loadingText="Saving...">
             {saved ? "Saved" : REVEAL_COPY.save}
           </PrimaryButton>
         </View>

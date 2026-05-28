@@ -47,7 +47,7 @@ export function GlassCard({
 
   useEffect(() => {
     if (selected) {
-      scale.value = withSpring(1.02, spring.snappy);
+      scale.value = withSpring(1.03, spring.snappy);
       activeProgress.value = withTiming(1, { duration: 250 });
     } else {
       scale.value = withSpring(1, spring.gentle);
@@ -61,18 +61,18 @@ export function GlassCard({
       borderColor: interpolateColor(
         activeProgress.value,
         [0, 1],
-        ["rgba(255, 255, 255, 0.08)", "rgba(56, 189, 248, 0.8)"]
+        ["rgba(255, 255, 255, 0.08)", "rgba(56, 189, 248, 0.9)"]
       ),
       backgroundColor: interpolateColor(
         activeProgress.value,
         [0, 1],
-        ["rgba(255, 255, 255, 0.03)", "rgba(14, 165, 233, 0.1)"]
+        ["rgba(255, 255, 255, 0.03)", "rgba(14, 165, 233, 0.12)"]
       ),
       shadowColor: "#0ea5e9",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: withTiming(selected ? 0.35 : 0, { duration: 250 }),
-      shadowRadius: withTiming(selected ? 12 : 0, { duration: 250 }),
-      elevation: withTiming(selected ? 4 : 0, { duration: 250 }),
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: withTiming(selected ? 0.6 : 0, { duration: 250 }),
+      shadowRadius: withTiming(selected ? 16 : 0, { duration: 250 }),
+      elevation: withTiming(selected ? 6 : 0, { duration: 250 }),
     };
   });
 
@@ -83,7 +83,7 @@ export function GlassCard({
       {...props}
     >
       <BlurView
-        intensity={intensity}
+        intensity={selected ? 70 : intensity}
         tint="dark"
         experimentalBlurMethod={Platform.OS === "android" ? "dimezisBlurView" : undefined}
         style={StyleSheet.absoluteFill}
@@ -107,7 +107,6 @@ export function GlassCard({
 const styles = StyleSheet.create({
   wrapper: {
     borderRadius: radius.lg,
-    overflow: "hidden",
   },
   inner: {
     borderRadius: radius.lg,

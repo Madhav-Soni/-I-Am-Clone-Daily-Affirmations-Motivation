@@ -86,8 +86,8 @@ function FilterChip({
   useEffect(() => {
     if (active) {
       scale.value = withSequence(
-        withSpring(1.08, spring.snappy),
-        withSpring(1.02, spring.gentle)
+        withSpring(1.1, spring.snappy),
+        withSpring(1.04, spring.gentle)
       );
     } else {
       scale.value = withSpring(1, spring.gentle);
@@ -100,7 +100,7 @@ function FilterChip({
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(active ? 1.02 : 1, spring.gentle);
+    scale.value = withSpring(active ? 1.04 : 1, spring.gentle);
     opacity.value = withSpring(1, spring.gentle);
   };
 
@@ -184,13 +184,13 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.08)",
   },
   chipActive: {
-    backgroundColor: "rgba(14, 165, 233, 0.15)",
+    backgroundColor: "rgba(14, 165, 233, 0.18)",
     borderColor: colors.brand[400] || "#38bdf8",
     shadowColor: colors.brand[500] || "#0ea5e9",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.65,
+    shadowRadius: 16,
+    elevation: 8,
   },
   chipText: {
     fontSize: 12,
