@@ -172,65 +172,72 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* Personalized Progress Panel */}
-        <Animated.View 
+        <Animated.View
           entering={FadeInDown.delay(100).duration(600)}
           style={{
             flexDirection: "row",
             flexWrap: "wrap",
             justifyContent: "space-between",
-            rowGap: 16,
+            rowGap: 14,
             marginTop: 24,
             marginBottom: 24,
-            zIndex: 10,
-            position: "relative",
           }}
         >
           {[
-            { label: "DAY STREAK", value: "14", icon: "🔥" },
+            { label: "DAY STREAK",    value: "14",  icon: "🔥" },
             { label: "TOTAL RITUALS", value: "126", icon: "✨" },
-            { label: "CONSISTENCY", value: "91%", icon: "📈" },
-            { label: "AFFIRMATIONS", value: "142", icon: "🌿" },
+            { label: "CONSISTENCY",   value: "91%", icon: "📈" },
+            { label: "AFFIRMATIONS",  value: "142", icon: "🌿" },
           ].map((item) => (
             <View
               key={item.label}
               style={{
                 width: "47%",
-                height: 170,
+                height: 155,
                 borderRadius: 28,
-                paddingTop: 20,
-                paddingBottom: 22,
-                paddingHorizontal: 20,
+                paddingHorizontal: 18,
+                paddingTop: 18,
+                paddingBottom: 18,
                 justifyContent: "space-between",
                 alignItems: "flex-start",
-                backgroundColor: "rgba(12, 14, 28, 0.82)",
+                backgroundColor: "rgba(12, 14, 28, 0.85)",
                 borderWidth: 1,
                 borderColor: "rgba(255, 255, 255, 0.10)",
+                elevation: 5,
+                overflow: "visible",
               }}
             >
-              <Text style={{ fontSize: 38, includeFontPadding: false }}>{item.icon}</Text>
-              <View style={{ width: "100%" }}>
-                <Text
-                  style={{
-                    fontSize: 34,
-                    fontWeight: "700",
-                    color: "#FFFFFF",
-                    fontFamily: "DMSans_700Bold",
-                    includeFontPadding: false,
-                  }}
-                >
+              {/* Icon — breathing room from top edge */}
+              <Text style={{
+                fontSize: 30,
+                lineHeight: 36,
+              }}>
+                {item.icon}
+              </Text>
+
+              {/* Number + Label — anchored to bottom */}
+              <View style={{ width: "100%", paddingLeft: 2 }}>
+                <Text style={{
+                  fontSize: 34,
+                  fontWeight: "700",
+                  color: "#FFFFFF",
+                  fontFamily: "DMSans_700Bold",
+                  letterSpacing: 0.5,
+                  lineHeight: 42,
+                  // DO NOT set includeFontPadding: false on bold numbers
+                  // Android clips left bearing without it
+                }}>
                   {item.value}
                 </Text>
-                <Text
-                  style={{
-                    fontSize: 11,
-                    letterSpacing: 2,
-                    textTransform: "uppercase",
-                    color: "rgba(255, 255, 255, 0.6)",
-                    fontFamily: "DMSans_500Medium",
-                    marginTop: 6,
-                    includeFontPadding: false,
-                  }}
-                >
+                <Text style={{
+                  fontSize: 11,
+                  letterSpacing: 2,
+                  textTransform: "uppercase",
+                  color: "rgba(255, 255, 255, 0.5)",
+                  fontFamily: "DMSans_500Medium",
+                  marginTop: 5,
+                  includeFontPadding: false,
+                }}>
                   {item.label}
                 </Text>
               </View>
