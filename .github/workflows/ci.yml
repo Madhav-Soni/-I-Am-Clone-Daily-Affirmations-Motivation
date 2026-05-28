@@ -9,6 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
 
     steps:
       - name: Checkout repo

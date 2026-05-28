@@ -29,7 +29,7 @@ const {
 // ── Client ───────────────────────────────────────────────────────────────────
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || "mock-key-for-testing",
   baseURL: process.env.OPENAI_BASE_URL,
 });
 
