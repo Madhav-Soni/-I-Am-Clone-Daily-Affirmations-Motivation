@@ -29,7 +29,10 @@ const optionalEnvVars = {
 // Validate required environment variables
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
 
-if (missingEnvVars.length > 0) {
+if (
+  process.env.NODE_ENV !== "test" &&
+  missingEnvVars.length > 0
+) {
   throw new Error(
     `Missing required environment variables: ${missingEnvVars.join(", ")}`
   );

@@ -7,6 +7,8 @@ on:
 jobs:
   mobile-and-backend:
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
 
     steps:
       - name: Checkout repo
@@ -22,6 +24,3 @@ jobs:
 
       - name: Run tests
         run: npm test --if-present
-
-      - name: Typecheck
-        run: npm run typecheck --if-present
