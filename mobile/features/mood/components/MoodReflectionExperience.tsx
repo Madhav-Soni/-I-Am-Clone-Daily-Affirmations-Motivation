@@ -19,12 +19,14 @@ import { routes } from "@/constants/routes";
 import { FloatingContinueBar } from "@/shared/components/layout/FloatingContinueBar";
 import { FullscreenScreen, GhostButton, Text } from "@/shared/components/primitives";
 import { hapticSuccess } from "@/shared/lib/haptics";
+import { useAuthStore } from "@/store";
 
 export function MoodReflectionExperience() {
   const [hasMounted, setHasMounted] = useState(false);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
 
+  const user = useAuthStore((s) => s.user);
   const mood = useCheckInDraftStore((s) => s.mood);
   const note = useCheckInDraftStore((s) => s.note);
   const setNote = useCheckInDraftStore((s) => s.setNote);
@@ -69,12 +71,13 @@ export function MoodReflectionExperience() {
     try {
       void hapticSuccess();
       setCompleting(true);
+      const activeTone = user?.preferences?.affirmationVoice || "gentle";
       console.log("[REFLECTION ACTION] Save check-in triggered. Target Mood:", mood, "Journal Note:", note);
       setTimeout(() => {
         setCompleting(false);
         router.push({
-          pathname: routes.modals.affirmationReveal,
-          params: { category: mood ?? "General" },
+          pathname: "/(app)/ritual" as any,
+          params: { mood: mood || "hopeful", tone: activeTone },
         });
       }, 700);
     } catch (err: any) {

@@ -25,6 +25,7 @@ export const routes = {
     libraryDetail: (id: string) => `/(app)/(library)/${id}` as const,
     profile: "/(app)/(profile)",
     stats: "/(app)/(profile)/stats",
+    ritual: "/(app)/ritual",
   },
   modals: {
     affirmationReveal: "/(modals)/affirmation-reveal",

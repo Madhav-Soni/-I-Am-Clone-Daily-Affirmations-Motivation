@@ -88,6 +88,8 @@ app.get("/health", (req, res) => {
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 
+const affirmationRoutes = require("./routes/affirmationRoutes");
+app.use("/api/affirmations", affirmationRoutes);
 app.use("/api", routes);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────

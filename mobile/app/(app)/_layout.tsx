@@ -55,6 +55,12 @@ export default function AppTabsLayout() {
           tabBarIcon: ({ color }) => <TabIcon name="person-outline" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="ritual"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
