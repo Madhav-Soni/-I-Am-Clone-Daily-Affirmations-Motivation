@@ -1,6 +1,6 @@
 # 🌿 I AM WELL — Premium Generative AI Wellness & Ritual Sanctuary
 
-[![Demo Video](https://img.shields.io/badge/Demo-Watch%20Video-red?style=flat&logo=youtube)](#)
+[![Demo Video](https://img.shields.io/badge/Demo-Watch%20Video-red?style=flat&logo=youtube)](https://www.loom.com/share/4310fdd8678e4c6ca23a00e68c19cb43)
 [![Download APK](https://img.shields.io/badge/Download-APK%20Release-blue?style=flat&logo=android)](https://github.com/Madhav-Soni/iamwell/releases)
 [![Expo SDK](https://img.shields.io/badge/Expo-SDK%2052-000000?style=flat&logo=expo)](https://expo.dev/)
 [![React Native](https://img.shields.io/badge/React%20Native-0.76-61DAFB?style=flat&logo=react)](https://reactnative.dev/)
